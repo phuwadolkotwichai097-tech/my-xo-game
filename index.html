@@ -1,18 +1,202 @@
-<style>
-    /* ปรับแต่งให้รองรับการลากบนมือถือได้ลื่นขึ้น */
-    .cell, .piece { 
-        touch-action: none; /* ป้องกันการเลื่อนหน้าจอขณะลากหมาก */
-        user-select: none;
-        -webkit-user-drag: element;
-    }
-    .cell[draggable="true"] {
-        cursor: move;
-        border: 2px dashed #4ecca3; /* ไฮไลท์หมากที่สามารถลากเดินได้ */
-    }
-</style>
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XO Online - Best of 3 System</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: white; overflow: hidden; }
+        .container { width: 100%; max-width: 420px; text-align: center; padding: 20px; background: #16213e; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); position: relative; }
+        
+        #lobby { display: flex; flex-direction: column; gap: 12px; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #2e3a59; }
+        input { padding: 12px; border-radius: 8px; border: none; font-size: 1rem; text-align: center; background: #0f3460; color: white; }
+        button { padding: 14px; cursor: pointer; background: #e94560; color: white; border: none; border-radius: 10px; font-weight: bold; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: scale(1.02); }
+        
+        .score-board { display: flex; justify-content: space-around; background: #0f3460; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #4ecca3; }
+        .score-item { font-size: 1.2rem; font-weight: bold; }
+        .score-val { color: #f1c40f; font-size: 1.5rem; }
+
+        #game-ui { display: none; }
+        .board { display: grid; grid-template-columns: repeat(3, 95px); gap: 12px; margin: 15px auto; justify-content: center; }
+        .cell { 
+            width: 95px; height: 95px; font-size: 2.8rem; background: #0f3460; color: #e94560; 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; touch-action: none; position: relative;
+        }
+        /* ไฮไลท์ช่องที่สามารถวางได้ */
+        .cell.drag-over { background: rgba(78, 204, 163, 0.2); border: 2px dashed #4ecca3; }
+
+        .player-zone { padding: 8px; border-radius: 15px; margin: 5px 0; border: 2px solid transparent; }
+        .active-zone { border-color: #4ecca3; background: rgba(78, 204, 163, 0.1); }
+        .timer-display { font-size: 1.2rem; font-weight: bold; color: #4ecca3; }
+        
+        .piece { 
+            width: 50px; height: 50px; background: #e94560; color: white; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1.5rem; font-weight: bold; border-radius: 8px; 
+            touch-action: none; cursor: grab;
+        }
+        .piece:active { cursor: grabbing; opacity: 0.7; }
+
+        #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 46, 0.98); border-radius: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+        .win-text { font-size: 3.5rem; font-weight: 900; color: #f1c40f; margin-bottom: 5px; }
+        .sub-text { font-size: 1.1rem; color: #4ecca3; margin-bottom: 20px; }
+
+        #big-countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10rem; font-weight: 900; color: #e94560; z-index: 1000; display: none; pointer-events: none; }
+        .animate-pulse { animation: pulse 1s ease-out; }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        .room-info { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="big-countdown">4</div>
+
+<div class="container">
+    <div id="result-screen">
+        <div id="winner-display" class="win-text">X WIN!</div>
+        <div id="result-desc" class="sub-text">ชนะ 2 ใน 3 เกมสำเร็จ!</div>
+        <button onclick="location.reload()" style="background: #4ecca3; width: 80%;">กลับสู่หน้าหลัก</button>
+        <p style="font-size: 0.8rem; margin-top: 15px; color: #888;">ปิดห้องใน <span id="back-timer">7</span>...</p>
+    </div>
+
+    <div id="lobby">
+        <h2>XO BEST OF 3</h2>
+        <button style="background:#4ecca3; font-size:1.1rem" onclick="findQuickMatch()">⚡ หาห้องเล่นด่วน (สุ่ม)</button>
+        <div class="input-group">
+            <button onclick="createPrivateRoom()">สร้างห้อง (Private)</button>
+            <input type="text" id="room-input" placeholder="ใส่รหัสห้อง">
+            <button style="background:#3498db" onclick="joinPrivateRoom()">เข้าด้วย Key</button>
+        </div>
+    </div>
+
+    <div id="game-ui">
+        <div class="room-info">ROOM: <span id="display-room-id">...</span> | ROLE: <span id="display-role">...</span></div>
+        
+        <div class="score-board">
+            <div class="score-item">X: <span id="score-x" class="score-val">0</span></div>
+            <div style="color: #4ecca3;">VS</div>
+            <div class="score-item">O: <span id="score-o" class="score-val">0</span></div>
+        </div>
+
+        <div id="zone-o" class="player-zone"><div class="timer-display">O: <span id="time-o">60</span>s</div><div id="tray-o" style="display:flex; justify-content:center; gap:8px;"></div></div>
+        <div id="status">กำลังรอ...</div>
+        <div id="board" class="board"></div>
+        <div id="zone-x" class="player-zone"><div id="tray-x" style="display:flex; justify-content:center; gap:8px;"></div><div class="timer-display">X: <span id="time-x">60</span>s</div></div>
+    </div>
+</div>
 
 <script type="module">
-    // ... (ส่วนการเชื่อมต่อ Firebase เหมือนเดิม) ...
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update, get, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAvBcOT1ZzasAVzfksDE2ubWf55dd_jV_I",
+        authDomain: "my-xo-game-ddf8e.firebaseapp.com",
+        databaseURL: "https://my-xo-game-ddf8e-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "my-xo-game-ddf8e",
+        storageBucket: "my-xo-game-ddf8e.firebasestorage.app",
+        messagingSenderId: "121057994178",
+        appId: "1:121057994178:web:17b25fc67355e2baf1a25b",
+        measurementId: "G-WK8CZQNFKF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    let gameRef, roomId, myRole, timerInterval, isMatchOver = false;
+    let cells = Array(9).fill(''), currentPlayer = 'X', gameOver = false, placedCount = {X:0, O:0}, timeLeft = {X:60, O:60}, isCountingDown = false, scores = {X:0, O:0};
+    
+    // ตัวแปรเก็บสถานะการลาก
+    let draggedFromIdx = null;
+    let isFromTray = false;
+
+    window.findQuickMatch = async () => {
+        const snap = await get(ref(db, 'rooms'));
+        let rid = null;
+        if (snap.exists()) {
+            const rs = snap.val();
+            for (let id in rs) { if (rs[id].status === 'waiting' && !rs[id].playerO) { rid = id; break; } }
+        }
+        if (rid) { roomId = rid; myRole = 'O'; update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true }); }
+        else {
+            roomId = "QUICK_" + Math.floor(1000 + Math.random() * 9000); myRole = 'X';
+            await set(ref(db, 'rooms/' + roomId), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
+        }
+        startSession();
+    };
+
+    window.createPrivateRoom = () => {
+        roomId = Math.floor(100000 + Math.random() * 900000).toString(); myRole = 'X';
+        set(ref(db, 'rooms/' + roomId), { status: 'private', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
+        startSession();
+    };
+
+    window.joinPrivateRoom = () => {
+        const id = document.getElementById('room-input').value.trim();
+        if (id.length < 4) return alert("รหัสผิด");
+        roomId = id; myRole = 'O';
+        update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
+        startSession();
+    };
+
+    function startSession() {
+        gameRef = ref(db, 'rooms/' + roomId);
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'block';
+        document.getElementById('display-room-id').textContent = roomId;
+        document.getElementById('display-role').textContent = myRole;
+        onValue(gameRef, (snap) => {
+            const d = snap.val(); if (!d || isMatchOver) return;
+            cells = d.cells; currentPlayer = d.currentPlayer; gameOver = d.gameOver;
+            placedCount = d.placedCount; timeLeft = d.timeLeft; scores = d.scores;
+            if (isCountingDown !== d.isCountingDown && d.isCountingDown) runCountdown();
+            isCountingDown = d.isCountingDown;
+
+            document.getElementById('score-x').textContent = scores.X;
+            document.getElementById('score-o').textContent = scores.O;
+
+            if (d.playerX && d.playerO && !gameOver && !isCountingDown) {
+                document.getElementById('status').textContent = (scores.X === 1 && scores.O === 1) ? "🔥 รอบตัดสิน!" : `ตาเดิน: ${currentPlayer}`;
+                startTimer();
+            } else if (!d.playerO) { document.getElementById('status').textContent = "รอผู้เล่นคนอื่น..."; }
+            
+            updateUI();
+            if (gameOver) handleRoundEnd();
+        });
+    }
+
+    function handleRoundEnd() {
+        stopTimer();
+        const roundWinner = checkWin() ? (currentPlayer === 'X' ? 'X' : 'O') : (timeLeft.X <= 0 ? 'O' : 'X');
+        if (myRole === 'X') {
+            const newScores = { ...scores };
+            newScores[roundWinner]++;
+            if (newScores.X >= 2 || newScores.O >= 2) {
+                update(gameRef, { scores: newScores });
+                setTimeout(() => showFinalResult(newScores.X >= 2 ? 'X' : 'O'), 1000);
+            } else {
+                setTimeout(() => {
+                    update(gameRef, { cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: true, scores: newScores });
+                }, 2000);
+            }
+        }
+    }
+
+    function showFinalResult(winner) {
+        if (isMatchOver) return; isMatchOver = true;
+        const resScr = document.getElementById('result-screen');
+        resScr.style.display = 'flex';
+        document.getElementById('winner-display').textContent = `${winner} WIN!`;
+        document.getElementById('result-desc').textContent = `ชนะขาดลอย ${scores[winner]} ต่อ ${scores[winner === 'X' ? 'O' : 'X']}!`;
+        let sec = 7;
+        const bTimer = document.getElementById('back-timer');
+        const interval = setInterval(() => {
+            sec--; bTimer.textContent = sec;
+            if (sec <= 0) { clearInterval(interval); if (myRole === 'X') remove(gameRef); location.reload(); }
+        }, 1000);
+    }
 
     function updateUI() {
         document.getElementById('time-x').textContent = Math.max(0, timeLeft.X);
@@ -23,91 +207,112 @@
             const c = document.createElement('div'); 
             c.className = 'cell'; 
             c.textContent = v;
-
-            // เงื่อนไข: เป็นตาเรา + หมากของเรา + วางครบ 3 ตัวแล้ว + เกมยังไม่จบ
+            
+            // ทำให้ลากหมากในตารางได้
             if (v === myRole && currentPlayer === myRole && placedCount[myRole] >= 3 && !gameOver && !isCountingDown) {
                 c.draggable = true;
+                c.style.cursor = 'grab';
             }
 
             c.ondragstart = (e) => {
-                e.dataTransfer.setData('fromIdx', i); // เก็บตำแหน่งเริ่มต้น
-                window.isFromTray = false; // ยืนยันว่าลากจากในตาราง
+                draggedFromIdx = i;
+                isFromTray = false;
+                e.dataTransfer.setData('text/plain', i);
             };
 
-            c.ondragover = (e) => e.preventDefault();
-            
+            c.ondragover = (e) => {
+                e.preventDefault();
+                if (!cells[i]) c.classList.add('drag-over');
+            };
+
+            c.ondragleave = () => c.classList.remove('drag-over');
+
             c.ondrop = (e) => {
-                const fromIdx = e.dataTransfer.getData('fromIdx');
-                handleMove(i, fromIdx);
+                e.preventDefault();
+                c.classList.remove('drag-over');
+                handleDrop(i);
             };
             
             b.appendChild(c);
         });
 
-        // อัปเดตหมากในถาด (Tray)
-        updateTrays();
-    }
-
-    function updateTrays() {
         const tx = document.getElementById('tray-x'), to = document.getElementById('tray-o');
         tx.innerHTML = ''; to.innerHTML = '';
-        
         document.getElementById('zone-x').classList.toggle('active-zone', currentPlayer === 'X');
         document.getElementById('zone-o').classList.toggle('active-zone', currentPlayer === 'O');
 
-        // สร้างหมากในถาด (เฉพาะตอนที่ยังวางไม่ครบ 3 ตัว)
-        if (placedCount.O < 3) {
-            for (let i = placedCount.O; i < 3; i++) {
-                const p = createPiece('O');
-                if (myRole === 'O' && currentPlayer === 'O' && !gameOver && !isCountingDown) p.draggable = true;
-                to.appendChild(p);
-            }
-        }
-        if (placedCount.X < 3) {
-            for (let i = placedCount.X; i < 3; i++) {
-                const p = createPiece('X');
-                if (myRole === 'X' && currentPlayer === 'X' && !gameOver && !isCountingDown) p.draggable = true;
-                tx.appendChild(p);
-            }
-        }
+        for (let i = (placedCount.O || 0); i < 3; i++) to.appendChild(createP('O'));
+        for (let i = (placedCount.X || 0); i < 3; i++) tx.appendChild(createP('X'));
     }
 
-    function createPiece(type) {
-        const p = document.createElement('div');
-        p.className = 'piece'; p.textContent = type;
-        p.ondragstart = (e) => {
-            window.isFromTray = true; // ยืนยันว่าลากจากถาดข้างนอก
+    function createP(t) {
+        const p = document.createElement('div'); 
+        p.className = 'piece'; 
+        p.textContent = t;
+        if (currentPlayer === t && myRole === t && !gameOver && !isCountingDown) {
+            p.draggable = true;
+        }
+        p.ondragstart = (e) => { 
+            isFromTray = true; 
+            draggedFromIdx = null; 
+            e.dataTransfer.setData('text/plain', 'tray');
         };
         return p;
     }
 
-    function handleMove(targetIdx, fromIdx) {
+    function handleDrop(targetIdx) {
+        // เช็คพื้นฐาน: เกมจบ/นับถอยหลัง/ไม่ใช่อุปกรณ์เรา/ช่องเป้าหมายไม่ว่าง
         if (gameOver || isCountingDown || currentPlayer !== myRole || cells[targetIdx] !== '') return;
 
-        let moveValid = false;
+        let canMove = false;
 
-        // กรณีที่ 1: ลากจากถาด (Tray)
-        if (window.isFromTray && placedCount[myRole] < 3) {
-            cells[targetIdx] = myRole;
-            placedCount[myRole]++;
-            moveValid = true;
-        } 
-        // กรณีที่ 2: ลากจากช่องหนึ่งไปอีกช่องหนึ่ง (Move)
-        else if (!window.isFromTray && fromIdx !== "" && cells[fromIdx] === myRole) {
-            cells[fromIdx] = ''; // ล้างช่องเก่า
-            cells[targetIdx] = myRole; // ใส่ช่องใหม่
-            moveValid = true;
+        if (isFromTray && placedCount[currentPlayer] < 3) {
+            // ลากจากถาดมาลงช่องว่าง
+            cells[targetIdx] = currentPlayer;
+            placedCount[currentPlayer]++;
+            canMove = true;
+        } else if (!isFromTray && draggedFromIdx !== null && cells[draggedFromIdx] === currentPlayer) {
+            // ลากจากในตารางมาลงช่องว่าง
+            cells[draggedFromIdx] = '';
+            cells[targetIdx] = currentPlayer;
+            canMove = true;
         }
 
-        if (moveValid) {
+        if (canMove) {
             const win = checkWin();
-            // ส่งค่าขึ้น Firebase ทันที
             update(gameRef, { 
                 cells, 
                 placedCount, 
                 currentPlayer: win ? currentPlayer : (currentPlayer === 'X' ? 'O' : 'X'), 
                 gameOver: win 
             });
+            // ล้างค่าหลังลากเสร็จ
+            draggedFromIdx = null;
+            isFromTray = false;
         }
     }
+
+    function checkWin() {
+        const p = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        return p.some(a => cells[a[0]] && cells[a[0]] === cells[a[1]] && cells[a[1]] === cells[a[2]]);
+    }
+
+    function startTimer() {
+        stopTimer();
+        timerInterval = setInterval(() => {
+            if (currentPlayer === myRole && !gameOver && !isCountingDown) {
+                timeLeft[currentPlayer]--; update(gameRef, { timeLeft });
+                if (timeLeft[currentPlayer] <= 0) update(gameRef, { gameOver: true });
+            }
+        }, 1000);
+    }
+    function stopTimer() { clearInterval(timerInterval); }
+
+    async function runCountdown() {
+        const el = document.getElementById('big-countdown'); el.style.display = 'block';
+        for (let i = 4; i > 0; i--) { el.textContent = i; el.classList.remove('animate-pulse'); void el.offsetWidth; el.classList.add('animate-pulse'); await new Promise(r => setTimeout(r, 1000)); }
+        el.style.display = 'none'; if (myRole === 'X') update(gameRef, { isCountingDown: false });
+    }
 </script>
+</body>
+</html>
