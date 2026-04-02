@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XO Online - Best of 3 System</title>
+    <title>XO Online - Sync & Matchmaking System</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: white; overflow: hidden; }
         .container { width: 100%; max-width: 420px; text-align: center; padding: 20px; background: #16213e; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); position: relative; }
@@ -13,6 +13,7 @@
         input { padding: 12px; border-radius: 8px; border: none; font-size: 1rem; text-align: center; background: #0f3460; color: white; }
         button { padding: 14px; cursor: pointer; background: #e94560; color: white; border: none; border-radius: 10px; font-weight: bold; transition: 0.2s; }
         button:hover { opacity: 0.9; transform: scale(1.02); }
+        button:disabled { background: #555; cursor: not-allowed; transform: none; }
         
         .score-board { display: flex; justify-content: space-around; background: #0f3460; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #4ecca3; }
         .score-item { font-size: 1.2rem; font-weight: bold; }
@@ -20,25 +21,14 @@
 
         #game-ui { display: none; }
         .board { display: grid; grid-template-columns: repeat(3, 95px); gap: 12px; margin: 15px auto; justify-content: center; }
-        .cell { 
-            width: 95px; height: 95px; font-size: 2.8rem; background: #0f3460; color: #e94560; 
-            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            font-weight: bold; touch-action: none; position: relative;
-        }
-        /* ไฮไลท์ช่องที่สามารถวางได้ */
+        .cell { width: 95px; height: 95px; font-size: 2.8rem; background: #0f3460; color: #e94560; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; touch-action: none; position: relative; }
         .cell.drag-over { background: rgba(78, 204, 163, 0.2); border: 2px dashed #4ecca3; }
 
         .player-zone { padding: 8px; border-radius: 15px; margin: 5px 0; border: 2px solid transparent; }
         .active-zone { border-color: #4ecca3; background: rgba(78, 204, 163, 0.1); }
         .timer-display { font-size: 1.2rem; font-weight: bold; color: #4ecca3; }
         
-        .piece { 
-            width: 50px; height: 50px; background: #e94560; color: white; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 1.5rem; font-weight: bold; border-radius: 8px; 
-            touch-action: none; cursor: grab;
-        }
-        .piece:active { cursor: grabbing; opacity: 0.7; }
+        .piece { width: 50px; height: 50px; background: #e94560; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; border-radius: 8px; touch-action: none; cursor: grab; }
 
         #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 46, 0.98); border-radius: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
         .win-text { font-size: 3.5rem; font-weight: 900; color: #f1c40f; margin-bottom: 5px; }
@@ -47,7 +37,8 @@
         #big-countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10rem; font-weight: 900; color: #e94560; z-index: 1000; display: none; pointer-events: none; }
         .animate-pulse { animation: pulse 1s ease-out; }
         @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
-        .room-info { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
+        
+        #matchmaking-status { font-size: 0.9rem; color: #4ecca3; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -57,32 +48,31 @@
 <div class="container">
     <div id="result-screen">
         <div id="winner-display" class="win-text">X WIN!</div>
-        <div id="result-desc" class="sub-text">ชนะ 2 ใน 3 เกมสำเร็จ!</div>
-        <button onclick="location.reload()" style="background: #4ecca3; width: 80%;">กลับสู่หน้าหลัก</button>
-        <p style="font-size: 0.8rem; margin-top: 15px; color: #888;">ปิดห้องใน <span id="back-timer">7</span>...</p>
+        <div id="result-desc" class="sub-text">จบแมตช์การแข่งขัน</div>
+        <button onclick="location.reload()" style="background: #4ecca3; width: 80%;">กลับหน้าหลัก</button>
+        <p style="font-size: 0.8rem; margin-top: 15px; color: #888;">กลับสู่ Lobby อัตโนมัติใน <span id="back-timer">7</span>...</p>
     </div>
 
     <div id="lobby">
-        <h2>XO BEST OF 3</h2>
-        <button style="background:#4ecca3; font-size:1.1rem" onclick="findQuickMatch()">⚡ หาห้องเล่นด่วน (สุ่ม)</button>
+        <h2>XO ONLINE</h2>
+        <button id="btn-quick" style="background:#4ecca3; font-size:1.1rem" onclick="findQuickMatch()">⚡ หาห้องออนไลน์ (2 คน)</button>
+        <div id="matchmaking-status">กำลังหาคู่เล่น... กรุณารอสักครู่</div>
+        
         <div class="input-group">
-            <button onclick="createPrivateRoom()">สร้างห้อง (Private)</button>
+            <button onclick="createPrivateRoom()">สร้างห้อง Private</button>
             <input type="text" id="room-input" placeholder="ใส่รหัสห้อง">
             <button style="background:#3498db" onclick="joinPrivateRoom()">เข้าด้วย Key</button>
         </div>
     </div>
 
     <div id="game-ui">
-        <div class="room-info">ROOM: <span id="display-room-id">...</span> | ROLE: <span id="display-role">...</span></div>
-        
         <div class="score-board">
             <div class="score-item">X: <span id="score-x" class="score-val">0</span></div>
             <div style="color: #4ecca3;">VS</div>
             <div class="score-item">O: <span id="score-o" class="score-val">0</span></div>
         </div>
-
         <div id="zone-o" class="player-zone"><div class="timer-display">O: <span id="time-o">60</span>s</div><div id="tray-o" style="display:flex; justify-content:center; gap:8px;"></div></div>
-        <div id="status">กำลังรอ...</div>
+        <div id="status">กำลังแข่ง...</div>
         <div id="board" class="board"></div>
         <div id="zone-x" class="player-zone"><div id="tray-x" style="display:flex; justify-content:center; gap:8px;"></div><div class="timer-display">X: <span id="time-x">60</span>s</div></div>
     </div>
@@ -90,7 +80,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, update, get, remove } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAvBcOT1ZzasAVzfksDE2ubWf55dd_jV_I",
@@ -107,24 +97,37 @@
     const db = getDatabase(app);
     let gameRef, roomId, myRole, timerInterval, isMatchOver = false;
     let cells = Array(9).fill(''), currentPlayer = 'X', gameOver = false, placedCount = {X:0, O:0}, timeLeft = {X:60, O:60}, isCountingDown = false, scores = {X:0, O:0};
-    
-    // ตัวแปรเก็บสถานะการลาก
-    let draggedFromIdx = null;
-    let isFromTray = false;
+    let draggedFromIdx = null, isFromTray = false;
 
+    // --- ระบบ Matchmaking (รอครบ 2 คนถึงจะเข้าเกม) ---
     window.findQuickMatch = async () => {
+        document.getElementById('btn-quick').disabled = true;
+        document.getElementById('matchmaking-status').style.display = 'block';
+        
         const snap = await get(ref(db, 'rooms'));
-        let rid = null;
+        let foundRid = null;
         if (snap.exists()) {
             const rs = snap.val();
-            for (let id in rs) { if (rs[id].status === 'waiting' && !rs[id].playerO) { rid = id; break; } }
+            for (let id in rs) {
+                if (rs[id].status === 'waiting' && !rs[id].playerO) { foundRid = id; break; }
+            }
         }
-        if (rid) { roomId = rid; myRole = 'O'; update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true }); }
-        else {
+
+        if (foundRid) {
+            roomId = foundRid; myRole = 'O';
+            await update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
+            startSession();
+        } else {
             roomId = "QUICK_" + Math.floor(1000 + Math.random() * 9000); myRole = 'X';
-            await set(ref(db, 'rooms/' + roomId), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
+            await set(ref(db, 'rooms/' + roomId), { 
+                status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, 
+                placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, 
+                playerX: true, playerO: false, scores: {X:0, O:0} 
+            });
+            // รอจนกว่า playerO จะเข้ามา
+            const waitRef = ref(db, 'rooms/' + roomId + '/playerO');
+            onValue(waitRef, (s) => { if(s.val() === true) startSession(); });
         }
-        startSession();
     };
 
     window.createPrivateRoom = () => {
@@ -134,9 +137,9 @@
     };
 
     window.joinPrivateRoom = () => {
-        const id = document.getElementById('room-input').value.trim();
-        if (id.length < 4) return alert("รหัสผิด");
-        roomId = id; myRole = 'O';
+        roomId = document.getElementById('room-input').value.trim();
+        if (roomId.length < 4) return alert("รหัสผิด");
+        myRole = 'O';
         update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
         startSession();
     };
@@ -145,12 +148,13 @@
         gameRef = ref(db, 'rooms/' + roomId);
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
-        document.getElementById('display-room-id').textContent = roomId;
-        document.getElementById('display-role').textContent = myRole;
+        onDisconnect(gameRef).remove(); // ถ้าเน็ตหลุด ให้ลบห้องทิ้ง
+
         onValue(gameRef, (snap) => {
             const d = snap.val(); if (!d || isMatchOver) return;
             cells = d.cells; currentPlayer = d.currentPlayer; gameOver = d.gameOver;
             placedCount = d.placedCount; timeLeft = d.timeLeft; scores = d.scores;
+            
             if (isCountingDown !== d.isCountingDown && d.isCountingDown) runCountdown();
             isCountingDown = d.isCountingDown;
 
@@ -158,137 +162,106 @@
             document.getElementById('score-o').textContent = scores.O;
 
             if (d.playerX && d.playerO && !gameOver && !isCountingDown) {
-                document.getElementById('status').textContent = (scores.X === 1 && scores.O === 1) ? "🔥 รอบตัดสิน!" : `ตาเดิน: ${currentPlayer}`;
+                document.getElementById('status').textContent = `ตาของ: ${currentPlayer}`;
                 startTimer();
-            } else if (!d.playerO) { document.getElementById('status').textContent = "รอผู้เล่นคนอื่น..."; }
-            
+            }
             updateUI();
             if (gameOver) handleRoundEnd();
         });
     }
 
+    // --- แก้ไขจุดที่มีปัญหา: รวมศูนย์การตัดสินใจจบเกม ---
     function handleRoundEnd() {
         stopTimer();
-        const roundWinner = checkWin() ? (currentPlayer === 'X' ? 'X' : 'O') : (timeLeft.X <= 0 ? 'O' : 'X');
+        if (isMatchOver) return;
+
+        // เช็คผู้ชนะรอบนี้
+        const win = checkWin();
+        let roundWinner = win ? (currentPlayer === 'X' ? 'X' : 'O') : null;
+        if (!win) roundWinner = (timeLeft.X <= 0) ? 'O' : 'X';
+
+        // เฉพาะเจ้าของหมากที่ชนะ หรือ Player X (ถ้าเสมอ/หมดเวลา) เป็นคนคุม Logic สรุปผล
         if (myRole === 'X') {
             const newScores = { ...scores };
             newScores[roundWinner]++;
+
             if (newScores.X >= 2 || newScores.O >= 2) {
-                update(gameRef, { scores: newScores });
-                setTimeout(() => showFinalResult(newScores.X >= 2 ? 'X' : 'O'), 1000);
+                // จบแมตช์ถาวร
+                setTimeout(() => {
+                    update(gameRef, { scores: newScores, status: 'finished' });
+                    showFinalResult(newScores.X >= 2 ? 'X' : 'O');
+                }, 500);
             } else {
+                // เริ่มรอบใหม่หลังจากค้างหน้าจอ 2 วินาที
                 setTimeout(() => {
                     update(gameRef, { cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: true, scores: newScores });
-                }, 2000);
+                }, 2500);
             }
+        } else {
+            // Player O แค่รอเช็คสถานะ finished จาก Firebase
+            get(ref(db, 'rooms/' + roomId + '/status')).then((s) => {
+                if(s.val() === 'finished') showFinalResult(scores.X >= 2 ? 'X' : 'O');
+            });
         }
     }
 
     function showFinalResult(winner) {
-        if (isMatchOver) return; isMatchOver = true;
-        const resScr = document.getElementById('result-screen');
-        resScr.style.display = 'flex';
+        if (isMatchOver) return; 
+        isMatchOver = true;
+        document.getElementById('result-screen').style.display = 'flex';
         document.getElementById('winner-display').textContent = `${winner} WIN!`;
-        document.getElementById('result-desc').textContent = `ชนะขาดลอย ${scores[winner]} ต่อ ${scores[winner === 'X' ? 'O' : 'X']}!`;
+        
         let sec = 7;
-        const bTimer = document.getElementById('back-timer');
+        const timerTxt = document.getElementById('back-timer');
         const interval = setInterval(() => {
-            sec--; bTimer.textContent = sec;
-            if (sec <= 0) { clearInterval(interval); if (myRole === 'X') remove(gameRef); location.reload(); }
+            sec--; timerTxt.textContent = sec;
+            if (sec <= 0) {
+                clearInterval(interval);
+                if (myRole === 'X') remove(gameRef);
+                location.reload();
+            }
         }, 1000);
     }
 
+    // --- ส่วนของ UI และการลากหมาก (ปรับปรุงความเสถียร) ---
     function updateUI() {
         document.getElementById('time-x').textContent = Math.max(0, timeLeft.X);
         document.getElementById('time-o').textContent = Math.max(0, timeLeft.O);
         const b = document.getElementById('board'); b.innerHTML = '';
-        
         cells.forEach((v, i) => {
-            const c = document.createElement('div'); 
-            c.className = 'cell'; 
-            c.textContent = v;
-            
-            // ทำให้ลากหมากในตารางได้
+            const c = document.createElement('div'); c.className = 'cell'; c.textContent = v;
             if (v === myRole && currentPlayer === myRole && placedCount[myRole] >= 3 && !gameOver && !isCountingDown) {
                 c.draggable = true;
-                c.style.cursor = 'grab';
             }
-
-            c.ondragstart = (e) => {
-                draggedFromIdx = i;
-                isFromTray = false;
-                e.dataTransfer.setData('text/plain', i);
-            };
-
-            c.ondragover = (e) => {
-                e.preventDefault();
-                if (!cells[i]) c.classList.add('drag-over');
-            };
-
+            c.ondragstart = (e) => { draggedFromIdx = i; isFromTray = false; e.dataTransfer.setData('text', i); };
+            c.ondragover = (e) => { e.preventDefault(); if (!cells[i]) c.classList.add('drag-over'); };
             c.ondragleave = () => c.classList.remove('drag-over');
-
-            c.ondrop = (e) => {
-                e.preventDefault();
-                c.classList.remove('drag-over');
-                handleDrop(i);
-            };
-            
+            c.ondrop = (e) => { e.preventDefault(); c.classList.remove('drag-over'); handleDrop(i); };
             b.appendChild(c);
         });
-
         const tx = document.getElementById('tray-x'), to = document.getElementById('tray-o');
         tx.innerHTML = ''; to.innerHTML = '';
         document.getElementById('zone-x').classList.toggle('active-zone', currentPlayer === 'X');
         document.getElementById('zone-o').classList.toggle('active-zone', currentPlayer === 'O');
-
         for (let i = (placedCount.O || 0); i < 3; i++) to.appendChild(createP('O'));
         for (let i = (placedCount.X || 0); i < 3; i++) tx.appendChild(createP('X'));
     }
 
     function createP(t) {
-        const p = document.createElement('div'); 
-        p.className = 'piece'; 
-        p.textContent = t;
-        if (currentPlayer === t && myRole === t && !gameOver && !isCountingDown) {
-            p.draggable = true;
-        }
-        p.ondragstart = (e) => { 
-            isFromTray = true; 
-            draggedFromIdx = null; 
-            e.dataTransfer.setData('text/plain', 'tray');
-        };
+        const p = document.createElement('div'); p.className = 'piece'; p.textContent = t;
+        if (currentPlayer === t && myRole === t && !gameOver && !isCountingDown) p.draggable = true;
+        p.ondragstart = (e) => { isFromTray = true; draggedFromIdx = null; e.dataTransfer.setData('text', 'tray'); };
         return p;
     }
 
     function handleDrop(targetIdx) {
-        // เช็คพื้นฐาน: เกมจบ/นับถอยหลัง/ไม่ใช่อุปกรณ์เรา/ช่องเป้าหมายไม่ว่าง
         if (gameOver || isCountingDown || currentPlayer !== myRole || cells[targetIdx] !== '') return;
-
-        let canMove = false;
-
-        if (isFromTray && placedCount[currentPlayer] < 3) {
-            // ลากจากถาดมาลงช่องว่าง
-            cells[targetIdx] = currentPlayer;
-            placedCount[currentPlayer]++;
-            canMove = true;
-        } else if (!isFromTray && draggedFromIdx !== null && cells[draggedFromIdx] === currentPlayer) {
-            // ลากจากในตารางมาลงช่องว่าง
-            cells[draggedFromIdx] = '';
-            cells[targetIdx] = currentPlayer;
-            canMove = true;
-        }
-
-        if (canMove) {
+        let ok = false;
+        if (isFromTray && placedCount[currentPlayer] < 3) { cells[targetIdx] = currentPlayer; placedCount[currentPlayer]++; ok = true; }
+        else if (!isFromTray && draggedFromIdx !== null && cells[draggedFromIdx] === currentPlayer) { cells[draggedFromIdx] = ''; cells[targetIdx] = currentPlayer; ok = true; }
+        if (ok) {
             const win = checkWin();
-            update(gameRef, { 
-                cells, 
-                placedCount, 
-                currentPlayer: win ? currentPlayer : (currentPlayer === 'X' ? 'O' : 'X'), 
-                gameOver: win 
-            });
-            // ล้างค่าหลังลากเสร็จ
-            draggedFromIdx = null;
-            isFromTray = false;
+            update(gameRef, { cells, placedCount, currentPlayer: win ? currentPlayer : (currentPlayer === 'X' ? 'O' : 'X'), gameOver: win });
         }
     }
 
