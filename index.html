@@ -3,29 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XO Online - Auto Lobby System</title>
+    <title>XO Online - Best of 3 System</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: white; }
-        .container { width: 100%; max-width: 420px; text-align: center; padding: 20px; background: #16213e; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: white; overflow: hidden; }
+        .container { width: 100%; max-width: 420px; text-align: center; padding: 20px; background: #16213e; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); position: relative; }
+        
+        /* Lobby & General */
         #lobby { display: flex; flex-direction: column; gap: 12px; }
         .input-group { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #2e3a59; }
         input { padding: 12px; border-radius: 8px; border: none; font-size: 1rem; text-align: center; background: #0f3460; color: white; }
+        button { padding: 14px; cursor: pointer; background: #e94560; color: white; border: none; border-radius: 10px; font-weight: bold; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: scale(1.02); }
+        
+        /* Score Board */
+        .score-board { display: flex; justify-content: space-around; background: #0f3460; padding: 10px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #4ecca3; }
+        .score-item { font-size: 1.2rem; font-weight: bold; }
+        .score-val { color: #f1c40f; font-size: 1.5rem; }
+
+        /* Game UI */
         #game-ui { display: none; }
-        .board { display: grid; grid-template-columns: repeat(3, 95px); gap: 12px; margin: 20px auto; justify-content: center; }
+        .board { display: grid; grid-template-columns: repeat(3, 95px); gap: 12px; margin: 15px auto; justify-content: center; }
         .cell { width: 95px; height: 95px; font-size: 2.8rem; background: #0f3460; color: #e94560; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .player-zone { padding: 10px; border-radius: 15px; margin: 10px 0; border: 2px solid transparent; }
+        .player-zone { padding: 8px; border-radius: 15px; margin: 5px 0; border: 2px solid transparent; }
         .active-zone { border-color: #4ecca3; background: rgba(78, 204, 163, 0.1); }
-        .timer-display { font-size: 1.5rem; font-weight: bold; color: #4ecca3; }
-        .piece { width: 55px; height: 55px; background: #e94560; color: white; display: flex; align-items: center; justify-content: center; cursor: grab; font-size: 1.8rem; font-weight: bold; border-radius: 8px; }
+        .timer-display { font-size: 1.2rem; font-weight: bold; color: #4ecca3; }
+        .piece { width: 50px; height: 50px; background: #e94560; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; border-radius: 8px; }
+
+        /* Result Screen Overlay */
+        #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 26, 46, 0.98); border-radius: 20px; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 2000; }
+        .win-text { font-size: 3.5rem; font-weight: 900; color: #f1c40f; margin-bottom: 5px; }
+        .sub-text { font-size: 1.1rem; color: #4ecca3; margin-bottom: 20px; }
+
         #big-countdown { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 10rem; font-weight: 900; color: #e94560; z-index: 1000; display: none; pointer-events: none; }
         .animate-pulse { animation: pulse 1s ease-out; }
         @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
-        button { padding: 14px; cursor: pointer; background: #e94560; color: white; border: none; border-radius: 10px; font-weight: bold; transition: 0.2s; }
-        button:hover { opacity: 0.9; transform: scale(1.02); }
-        .btn-quick { background: #4ecca3; font-size: 1.1rem; }
-        .btn-join { background: #3498db; }
-        .room-info { background: #0f3460; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 0.8rem; color: #4ecca3; }
-        #win-overlay { color: #f1c40f; font-size: 1.2rem; font-weight: bold; margin-top: 10px; display: none; }
+        .room-info { font-size: 0.7rem; color: #888; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -33,22 +45,34 @@
 <div id="big-countdown">4</div>
 
 <div class="container">
+    <div id="result-screen">
+        <div id="winner-display" class="win-text">X WIN!</div>
+        <div id="result-desc" class="sub-text">ชนะ 2 ใน 3 เกมสำเร็จ!</div>
+        <button onclick="location.reload()" style="background: #4ecca3; width: 80%;">กลับสู่หน้าหลัก</button>
+        <p style="font-size: 0.8rem; margin-top: 15px; color: #888;">ปิดห้องใน <span id="back-timer">7</span>...</p>
+    </div>
+
     <div id="lobby">
-        <h2>XO MULTIPLAYER</h2>
-        <button class="btn-quick" onclick="findQuickMatch()">⚡ หาห้องเล่นด่วน (สุ่ม)</button>
+        <h2>XO BEST OF 3</h2>
+        <button style="background:#4ecca3; font-size:1.1rem" onclick="findQuickMatch()">⚡ หาห้องเล่นด่วน (สุ่ม)</button>
         <div class="input-group">
-            <p style="margin: 5px 0; font-size: 0.8rem; color: #888;">เล่นกับเพื่อน (Private)</p>
-            <button onclick="createPrivateRoom()">สร้างห้อง (รับ Key)</button>
-            <input type="text" id="room-input" placeholder="ใส่รหัสห้อง 6 หลัก">
-            <button class="btn-join" onclick="joinPrivateRoom()">เข้าด้วย Key</button>
+            <button onclick="createPrivateRoom()">สร้างห้อง (Private)</button>
+            <input type="text" id="room-input" placeholder="ใส่รหัสห้อง">
+            <button style="background:#3498db" onclick="joinPrivateRoom()">เข้าด้วย Key</button>
         </div>
     </div>
 
     <div id="game-ui">
-        <div class="room-info">รหัสห้อง: <span id="display-room-id">...</span> | คุณคือ: <span id="display-role">...</span></div>
+        <div class="room-info">ROOM: <span id="display-room-id">...</span> | ROLE: <span id="display-role">...</span></div>
+        
+        <div class="score-board">
+            <div class="score-item">X: <span id="score-x" class="score-val">0</span></div>
+            <div style="color: #4ecca3;">VS</div>
+            <div class="score-item">O: <span id="score-o" class="score-val">0</span></div>
+        </div>
+
         <div id="zone-o" class="player-zone"><div class="timer-display">O: <span id="time-o">60</span>s</div><div id="tray-o" style="display:flex; justify-content:center; gap:8px;"></div></div>
-        <div id="status">กำลังรอผู้เล่น...</div>
-        <div id="win-overlay">กลับสู่หน้าหลักใน 5 วินาที...</div>
+        <div id="status">กำลังรอ...</div>
         <div id="board" class="board"></div>
         <div id="zone-x" class="player-zone"><div id="tray-x" style="display:flex; justify-content:center; gap:8px;"></div><div class="timer-display">X: <span id="time-x">60</span>s</div></div>
     </div>
@@ -71,81 +95,103 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    let gameRef, roomId, myRole, timerInterval, isRedirecting = false;
-    let cells = Array(9).fill(''), currentPlayer = 'X', gameOver = false, placedCount = {X:0, O:0}, timeLeft = {X:60, O:60}, isCountingDown = false;
+    let gameRef, roomId, myRole, timerInterval, isMatchOver = false;
+    let cells = Array(9).fill(''), currentPlayer = 'X', gameOver = false, placedCount = {X:0, O:0}, timeLeft = {X:60, O:60}, isCountingDown = false, scores = {X:0, O:0};
 
     window.findQuickMatch = async () => {
-        const snapshot = await get(ref(db, 'rooms'));
-        let foundRoom = null;
-        if (snapshot.exists()) {
-            const rooms = snapshot.val();
-            for (let id in rooms) { if (rooms[id].status === 'waiting' && !rooms[id].playerO) { foundRoom = id; break; } }
+        const snap = await get(ref(db, 'rooms'));
+        let rid = null;
+        if (snap.exists()) {
+            const rs = snap.val();
+            for (let id in rs) { if (rs[id].status === 'waiting' && !rs[id].playerO) { rid = id; break; } }
         }
-        if (foundRoom) { roomId = foundRoom; myRole = 'O'; update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true }); }
+        if (rid) { roomId = rid; myRole = 'O'; update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true }); }
         else {
             roomId = "QUICK_" + Math.floor(1000 + Math.random() * 9000); myRole = 'X';
-            await set(ref(db, 'rooms/' + roomId), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false });
+            await set(ref(db, 'rooms/' + roomId), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
         }
         startSession();
     };
 
     window.createPrivateRoom = () => {
         roomId = Math.floor(100000 + Math.random() * 900000).toString(); myRole = 'X';
-        set(ref(db, 'rooms/' + roomId), { status: 'private', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false });
+        set(ref(db, 'rooms/' + roomId), { status: 'private', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
         startSession();
     };
 
     window.joinPrivateRoom = () => {
         const id = document.getElementById('room-input').value.trim();
-        if (id.length < 4) return alert("รหัสห้องไม่ถูกต้อง");
+        if (id.length < 4) return alert("รหัสผิด");
         roomId = id; myRole = 'O';
         update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
         startSession();
     };
 
     function startSession() {
-        isRedirecting = false;
         gameRef = ref(db, 'rooms/' + roomId);
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
-        document.getElementById('win-overlay').style.display = 'none';
         document.getElementById('display-room-id').textContent = roomId;
         document.getElementById('display-role').textContent = myRole;
-        listenGame();
-    }
-
-    function listenGame() {
         onValue(gameRef, (snap) => {
-            const d = snap.val(); if (!d || isRedirecting) return;
+            const d = snap.val(); if (!d || isMatchOver) return;
             cells = d.cells; currentPlayer = d.currentPlayer; gameOver = d.gameOver;
-            placedCount = d.placedCount; timeLeft = d.timeLeft;
+            placedCount = d.placedCount; timeLeft = d.timeLeft; scores = d.scores;
             if (isCountingDown !== d.isCountingDown && d.isCountingDown) runCountdown();
             isCountingDown = d.isCountingDown;
 
-            if (d.playerX && d.playerO) {
-                if (!gameOver && !isCountingDown) {
-                    document.getElementById('status').textContent = `ตาเดิน: ${currentPlayer}`;
-                    startTimer();
-                }
-            } else { document.getElementById('status').textContent = "กำลังรอผู้เล่นคนอื่น..."; }
+            document.getElementById('score-x').textContent = scores.X;
+            document.getElementById('score-o').textContent = scores.O;
+
+            if (d.playerX && d.playerO && !gameOver && !isCountingDown) {
+                document.getElementById('status').textContent = (scores.X === 1 && scores.O === 1) ? "🔥 รอบตัดสิน!" : `ตาเดิน: ${currentPlayer}`;
+                startTimer();
+            } else if (!d.playerO) { document.getElementById('status').textContent = "รอผู้เล่นคนอื่น..."; }
             
             updateUI();
-            if (gameOver) handleGameOver();
+            if (gameOver) handleRoundEnd();
         });
     }
 
-    function handleGameOver() {
-        if (isRedirecting) return;
-        isRedirecting = true;
+    function handleRoundEnd() {
         stopTimer();
-        const winner = checkWin() ? currentPlayer : (timeLeft.X <= 0 ? 'O' : 'X');
-        document.getElementById('status').textContent = `จบเกม! ${winner} เป็นฝ่ายชนะ 🎉`;
-        document.getElementById('win-overlay').style.display = 'block';
+        const roundWinner = checkWin() ? (currentPlayer === 'X' ? 'X' : 'O') : (timeLeft.X <= 0 ? 'O' : 'X');
+        
+        // เฉพาะคนสร้างห้อง (X) เป็นคนอัปเดตคะแนนเพื่อป้องกันบั๊ก
+        if (myRole === 'X') {
+            const newScores = { ...scores };
+            newScores[roundWinner]++;
+            
+            if (newScores.X >= 2 || newScores.O >= 2) {
+                // จบแมตช์
+                update(gameRef, { scores: newScores });
+                setTimeout(() => showFinalResult(newScores.X >= 2 ? 'X' : 'O'), 1000);
+            } else {
+                // เริ่มรอบใหม่
+                setTimeout(() => {
+                    update(gameRef, { cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: true, scores: newScores });
+                }, 2000);
+            }
+        }
+    }
 
-        setTimeout(async () => {
-            if (myRole === 'X') remove(gameRef); // คนสร้างห้องเป็นคนลบข้อมูลห้องทิ้ง
-            location.reload(); // รีโหลดหน้าเว็บเพื่อกลับสู่หน้า Lobby
-        }, 5000);
+    function showFinalResult(winner) {
+        if (isMatchOver) return; isMatchOver = true;
+        const resScr = document.getElementById('result-screen');
+        resScr.style.display = 'flex';
+        document.getElementById('winner-display').textContent = `${winner} WIN!`;
+        document.getElementById('result-desc').textContent = `ชนะขาดลอย ${scores[winner]} ต่อ ${scores[winner === 'X' ? 'O' : 'X']}!`;
+
+        let sec = 7;
+        const bTimer = document.getElementById('back-timer');
+        const interval = setInterval(() => {
+            sec--; bTimer.textContent = sec;
+            if (sec <= 0) {
+                clearInterval(interval);
+                if (myRole === 'X') remove(gameRef);
+                location.reload();
+            }
+        }, 1000);
     }
 
     function updateUI() {
@@ -164,8 +210,8 @@
         tx.innerHTML = ''; to.innerHTML = '';
         document.getElementById('zone-x').classList.toggle('active-zone', currentPlayer === 'X');
         document.getElementById('zone-o').classList.toggle('active-zone', currentPlayer === 'O');
-        for (let i = placedCount.O; i < 3; i++) to.appendChild(createP('O'));
-        for (let i = placedCount.X; i < 3; i++) tx.appendChild(createP('X'));
+        for (let i = (placedCount.O || 0); i < 3; i++) to.appendChild(createP('O'));
+        for (let i = (placedCount.X || 0); i < 3; i++) tx.appendChild(createP('X'));
     }
 
     function createP(t) {
