@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>XO Online - Multiplayer</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; margin: 0; background: #1a1a2e; color: white; overflow: hidden;
+        }
+        .container { 
+            position: relative; width: 100%; max-width: 420px; text-align: center; 
+            padding: 20px; background: #16213e; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+        .board { display: grid; grid-template-columns: repeat(3, 95px); gap: 12px; margin: 20px auto; justify-content: center; }
+        .cell { 
+            width: 95px; height: 95px; font-size: 2.8rem; background: #0f3460; 
+            color: #e94560; border-radius: 12px; display: flex; align-items: center; 
+            justify-content: center; font-weight: bold; transition: all 0.2s;
+        }
+        .player-zone { padding: 10px; border-radius: 15px; margin: 10px 0; border: 2px solid transparent; }
+        .active-zone { border-color: #4ecca3; background: rgba(78, 204, 163, 0.1); }
+        .timer-display { font-size: 1.5rem; font-weight: bold; color: #4ecca3; }
+        .piece {
+            width: 55px; height: 55px; background: #e94560; color: white;
+            display: flex; align-items: center; justify-content: center;
+            cursor: grab; font-size: 1.8rem; font-weight: bold; border-radius: 8px;
+        }
+        #big-countdown {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 10rem; font-weight: 900; color: #e94560; z-index: 1000; display: none; pointer-events: none;
+        }
+        .animate-pulse { animation: pulse 1s ease-out; }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        #status { font-size: 1.2rem; margin: 15px 0; min-height: 1.5em; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 10px 20px; cursor: pointer; background: #e94560; color: white; border: none; border-radius: 8px; font-weight: bold; margin: 5px; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        #role-display { color: #4ecca3; font-weight: bold; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div id="big-countdown">4</div>
+
+<div class="container">
+    <h2>XO ONLINE</h2>
+    <div id="role-display">กรุณาเลือกฝั่ง</div>
+
+    <div id="zone-o" class="player-zone">
+        <div class="timer-display">O: <span id="time-o">60</span>s</div>
+        <div id="tray-o" style="display:flex; justify-content:center; gap:10px; margin-top:5px;"></div>
+    </div>
+    
+    <div id="status">รอผู้เล่นเลือกฝั่ง...</div>
+    <div id="board" class="board"></div>
+    
+    <div id="zone-x" class="player-zone">
+        <div id="tray-x" style="display:flex; justify-content:center; gap:10px; margin-bottom:5px;"></div>
+        <div class="timer-display">X: <span id="time-x">60</span>s</div>
+    </div>
+    
+    <div class="btn-group">
+        <button id="btn-join-x" onclick="joinGame('X')">เล่นเป็น X</button>
+        <button id="btn-join-o" onclick="joinGame('O')">เล่นเป็น O</button>
+        <button onclick="resetGameOnline()">รีเซ็ตเกมใหม่</button>
+    </div>
+</div>
+
+<script type="module">
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    // 1. Firebase Configuration (ใส่ค่าที่คุณให้มาแล้ว)
+    const firebaseConfig = {
+        apiKey: "AIzaSyAvBcOT1ZzasAVzfksDE2ubWf55dd_jV_I",
+        authDomain: "my-xo-game-ddf8e.firebaseapp.com",
+        databaseURL: "https://my-xo-game-ddf8e-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "my-xo-game-ddf8e",
+        storageBucket: "my-xo-game-ddf8e.firebasestorage.app",
+        messagingSenderId: "121057994178",
+        appId: "1:121057994178:web:17b25fc67355e2baf1a25b",
+        measurementId: "G-WK8CZQNFKF"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const gameRef = ref(db, 'xo_online_state');
+
+    // Local Game State
+    let myRole = null; 
+    let cells = ['', '', '', '', '', '', '', '', ''];
+    let currentPlayer = 'X';
+    let gameOver = false;
+    let placedCount = { X: 0, O: 0 };
+    let timeLeft = { X: 60, O: 60 };
+    let isCountingDown = false;
+    let timerInterval = null;
+
+    const winPatterns = [[0,1,2],[3,4,5],[6,7,8], [0,3,6],[1,4,7],[2,5,8], [0,4,8],[2,4,6]];
+
+    // Function to join as X or O
+    window.joinGame = (role) => {
+        myRole = role;
+        document.getElementById('role-display').textContent = `คุณคือฝั่ง: ${role}`;
+        document.getElementById('btn-join-x').disabled = true;
+        document.getElementById('btn-join-o').disabled = true;
+        renderBoard();
+        updateTray();
+    };
+
+    // Listen for changes from Firebase
+    onValue(gameRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            cells = data.cells || ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = data.currentPlayer || 'X';
+            gameOver = data.gameOver || false;
+            placedCount = data.placedCount || { X: 0, O: 0 };
+            timeLeft = data.timeLeft || { X: 60, O: 60 };
+            
+            if (isCountingDown !== data.isCountingDown && data.isCountingDown === true) {
+                runLocalCountdown();
+            }
+            isCountingDown = data.isCountingDown || false;
+            
+            updateTimerDisplay();
+            renderBoard();
+            updateTray();
+            
+            if (gameOver) {
+                stopTimers();
+                checkWinnerLocal();
+            } else if (!isCountingDown) {
+                startLocalTimer();
+            }
+        }
+    });
+
+    function syncData() {
+        set(gameRef, { cells, currentPlayer, gameOver, placedCount, timeLeft, isCountingDown });
+    }
+
+    function renderBoard() {
+        const boardElement = document.getElementById('board');
+        boardElement.innerHTML = '';
+        cells.forEach((value, index) => {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.textContent = value;
+            if (value === currentPlayer && value === myRole && placedCount[myRole] >= 3 && !gameOver && !isCountingDown) {
+                cell.draggable = true;
+            }
+            cell.addEventListener('dragstart', (e) => e.dataTransfer.setData('text', index));
+            cell.addEventListener('dragover', (e) => e.preventDefault());
+            cell.addEventListener('drop', (e) => handleDrop(index, e.dataTransfer.getData('text')));
+            boardElement.appendChild(cell);
+        });
+    }
+
+    function updateTray() {
+        const tx = document.getElementById('tray-x');
+        const to = document.getElementById('tray-o');
+        tx.innerHTML = ''; to.innerHTML = '';
+        document.getElementById('zone-x').classList.toggle('active-zone', currentPlayer === 'X');
+        document.getElementById('zone-o').classList.toggle('active-zone', currentPlayer === 'O');
+
+        for (let i = (placedCount.O || 0); i < 3; i++) {
+            const p = createPiece('O');
+            if (currentPlayer === 'O' && myRole === 'O' && !gameOver && !isCountingDown) p.draggable = true;
+            to.appendChild(p);
+        }
+        for (let i = (placedCount.X || 0); i < 3; i++) {
+            const p = createPiece('X');
+            if (currentPlayer === 'X' && myRole === 'X' && !gameOver && !isCountingDown) p.draggable = true;
+            tx.appendChild(p);
+        }
+    }
+
+    function createPiece(type) {
+        const p = document.createElement('div');
+        p.className = 'piece'; p.textContent = type;
+        p.addEventListener('dragstart', () => { window.isFromTray = true; });
+        return p;
+    }
+
+    function handleDrop(index, fromIndex) {
+        if (gameOver || cells[index] || isCountingDown || currentPlayer !== myRole) return;
+        if (window.isFromTray && placedCount[currentPlayer] < 3) {
+            cells[index] = currentPlayer;
+            placedCount[currentPlayer]++;
+        } else if (fromIndex !== "" && cells[fromIndex] === currentPlayer) {
+            cells[fromIndex] = '';
+            cells[index] = currentPlayer;
+        } else return;
+        window.isFromTray = false;
+        if (checkWinnerLogic()) gameOver = true;
+        else currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        syncData();
+    }
+
+    function checkWinnerLogic() {
+        return winPatterns.some(pattern => {
+            const [a, b, c] = pattern;
+            return cells[a] && cells[a] === cells[b] && cells[b] === cells[c];
+        });
+    }
+
+    function checkWinnerLocal() {
+        if (checkWinnerLogic()) {
+            document.getElementById('status').textContent = `ผู้ชนะ: ${currentPlayer} 🎉`;
+        } else {
+            document.getElementById('status').textContent = `ตาเดิน: ${currentPlayer}`;
+        }
+    }
+
+    function startLocalTimer() {
+        stopTimers();
+        if (gameOver || isCountingDown) return;
+        timerInterval = setInterval(() => {
+            if (currentPlayer === myRole) {
+                timeLeft[currentPlayer]--;
+                update(gameRef, { timeLeft });
+            }
+            if (timeLeft[currentPlayer] <= 0) {
+                gameOver = true;
+                syncData();
+            }
+        }, 1000);
+    }
+
+    async function runLocalCountdown() {
+        const bigCountdownEl = document.getElementById('big-countdown');
+        bigCountdownEl.style.display = 'block';
+        for (let i = 4; i > 0; i--) {
+            bigCountdownEl.textContent = i;
+            bigCountdownEl.classList.remove('animate-pulse');
+            void bigCountdownEl.offsetWidth; 
+            bigCountdownEl.classList.add('animate-pulse');
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        bigCountdownEl.style.display = 'none';
+        if (myRole === 'X') update(gameRef, { isCountingDown: false });
+    }
+
+    window.resetGameOnline = () => {
+        cells = ['', '', '', '', '', '', '', '', ''];
+        currentPlayer = 'X';
+        gameOver = false;
+        placedCount = { X: 0, O: 0 };
+        timeLeft = { X: 60, O: 60 };
+        isCountingDown = true;
+        syncData();
+    };
+
+    function stopTimers() { clearInterval(timerInterval); }
+    function updateTimerDisplay() {
+        document.getElementById('time-x').textContent = Math.max(0, timeLeft.X);
+        document.getElementById('time-o').textContent = Math.max(0, timeLeft.O);
+    }
+</script>
+</body>
+</html>
