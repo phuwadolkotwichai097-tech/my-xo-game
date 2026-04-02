@@ -2,20 +2,23 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XO NEON - BEST OF 3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>XO NEON - ULTIMATE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0a0b1e;
-            --card: rgba(22, 33, 62, 0.8);
+            --card: rgba(22, 33, 62, 0.9);
             --neon-cyan: #00fff2;
             --neon-pink: #ff007b;
             --neon-yellow: #f1c40f;
             --text: #ffffff;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body { 
-            font-family: 'Orbitron', 'Segoe UI', sans-serif; 
+            font-family: 'Orbitron', sans-serif; 
             display: flex; justify-content: center; align-items: center; 
             min-height: 100vh; margin: 0; background: var(--bg); 
             color: var(--text); overflow: hidden;
@@ -23,78 +26,76 @@
         }
 
         .container { 
-            width: 90%; max-width: 400px; text-align: center; padding: 25px; 
-            background: var(--card); border-radius: 30px; 
-            backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; 
+            width: 95%; max-width: 400px; text-align: center; padding: 20px; 
+            background: var(--card); border-radius: 25px; 
+            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; 
         }
 
-        h2 { text-transform: uppercase; letter-spacing: 3px; color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
-
-        /* Lobby UI */
-        #lobby { display: flex; flex-direction: column; gap: 15px; }
-        .input-group { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-        
-        input { 
-            width: 80%; padding: 12px; border-radius: 12px; border: 1px solid var(--neon-cyan); 
-            background: rgba(0,0,0,0.3); color: white; text-align: center; margin-bottom: 10px;
-            outline: none; transition: 0.3s;
-        }
-        input:focus { box-shadow: 0 0 15px var(--neon-cyan); }
-
-        button { 
-            padding: 15px; cursor: pointer; border: none; border-radius: 12px; 
-            font-weight: bold; text-transform: uppercase; transition: 0.3s;
-            background: var(--neon-pink); color: white; width: 100%;
-            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
-        }
-        button:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(233, 69, 96, 0.6); }
-        button:disabled { background: #444; cursor: wait; transform: none; box-shadow: none; }
-
-        /* Score & Game UI */
+        /* Score Board */
         .score-board { 
             display: flex; justify-content: space-around; align-items: center;
-            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 20px; 
-            margin-bottom: 15px; border: 1px solid var(--neon-cyan);
+            background: rgba(0,0,0,0.5); padding: 15px; border-radius: 20px; 
+            margin-bottom: 20px; border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 242, 0.2);
         }
-        .score-val { font-size: 1.8rem; color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow); }
+        .score-val { font-size: 2rem; color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow); }
 
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+        /* Game UI */
+        #game-ui { display: none; }
+        
+        .board { 
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; 
+            margin: 20px auto; width: 100%; aspect-ratio: 1/1;
+        }
+        
         .cell { 
-            aspect-ratio: 1/1; font-size: 2.5rem; background: rgba(255,255,255,0.05); 
-            border-radius: 15px; display: flex; align-items: center; justify-content: center; 
-            border: 1px solid rgba(255,255,255,0.1); transition: 0.2s;
+            background: rgba(255,255,255,0.05); border-radius: 15px;
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 3rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            touch-action: none;
         }
-        .cell[draggable="true"] { border-color: var(--neon-cyan); box-shadow: inset 0 0 10px var(--neon-cyan); }
-        .cell.drag-over { background: rgba(0, 255, 242, 0.1); transform: scale(1.02); }
 
-        .player-zone { padding: 10px; border-radius: 20px; transition: 0.5s; }
-        .active-zone { background: rgba(0, 255, 242, 0.1); border: 1px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 255, 242, 0.2); }
+        /* Glow Effects */
+        .cell[draggable="true"] { border-color: var(--neon-cyan); box-shadow: inset 0 0 15px rgba(0, 255, 242, 0.3); cursor: grab; }
+        .cell.drag-over { background: rgba(0, 255, 242, 0.2); border: 2px dashed var(--neon-cyan); transform: scale(0.95); }
+
+        .player-zone { 
+            padding: 12px; border-radius: 20px; transition: 0.4s; 
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .active-zone { background: rgba(0, 255, 242, 0.1); border: 1px solid var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 255, 242, 0.1); }
+
+        .timer-display { font-size: 1.2rem; font-weight: bold; color: var(--neon-cyan); }
 
         .piece { 
-            width: 45px; height: 45px; background: var(--neon-pink); border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; font-weight: bold;
-            box-shadow: 0 0 10px var(--neon-pink); cursor: grab;
+            width: 45px; height: 45px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 1.5rem; font-weight: bold; box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            touch-action: none; cursor: grab;
         }
 
-        /* Result & Overlays */
+        /* Overlay */
         #result-screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: var(--bg); border-radius: 30px; display: none; 
+            background: var(--bg); border-radius: 25px; display: none; 
             flex-direction: column; justify-content: center; align-items: center; z-index: 2000;
         }
-
+        
+        #lobby { display: flex; flex-direction: column; gap: 15px; }
+        button { 
+            padding: 16px; cursor: pointer; border: none; border-radius: 15px; 
+            font-family: 'Orbitron', sans-serif; font-weight: bold; transition: 0.3s;
+            background: var(--neon-pink); color: white; width: 100%;
+        }
+        button:hover { transform: scale(1.02); filter: brightness(1.2); }
+        
         #big-countdown { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 12rem; font-weight: 900; color: var(--neon-cyan); z-index: 3000; 
-            display: none; pointer-events: none; text-shadow: 0 0 30px var(--neon-cyan);
+            font-size: 12rem; font-weight: bold; color: var(--neon-cyan); z-index: 3000; 
+            display: none; pointer-events: none; text-shadow: 0 0 40px var(--neon-cyan);
         }
-
-        .matchmaking-overlay {
-            font-size: 0.9rem; color: var(--neon-cyan); margin-top: 10px; 
-            display: none; animation: blink 1.5s infinite;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
@@ -103,44 +104,45 @@
 
 <div class="container">
     <div id="result-screen">
-        <h1 id="winner-display" style="font-size: 3rem; margin: 0;">X WIN!</h1>
-        <p id="result-desc">MATCH FINISHED</p>
-        <button onclick="location.reload()" style="width: 200px; margin-top: 20px; background: var(--neon-cyan); color: var(--bg);">LOBBY</button>
-        <p style="font-size: 0.8rem; color: #666; margin-top: 20px;">Returning in <span id="back-timer">7</span>s</p>
+        <h1 id="winner-display" style="font-size: 3rem; margin-bottom: 0;">-</h1>
+        <p style="color: var(--neon-cyan); letter-spacing: 2px;">MATCH FINISHED</p>
+        <button onclick="location.reload()" style="width: 200px; background: var(--neon-cyan); color: var(--bg); margin-top: 20px;">BACK TO LOBBY</button>
+        <p style="margin-top: 20px; font-size: 0.8rem; opacity: 0.5;">Auto reload in <span id="back-timer">7</span>s</p>
     </div>
 
     <div id="lobby">
-        <h2>XO Neon</h2>
-        <button id="btn-quick" onclick="findQuickMatch()">⚡ Quick Match</button>
-        <div id="matchmaking-status" class="matchmaking-overlay">CONNECTING TO SERVER...</div>
+        <h2 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">XO NEON ONLINE</h2>
+        <button id="btn-quick" onclick="findQuickMatch()">⚡ QUICK MATCH</button>
+        <div id="matchmaking-status" style="display:none; color: var(--neon-cyan); font-size: 0.8rem; margin-top: 10px;">WAITING FOR OPPONENT...</div>
         
-        <div class="input-group">
-            <button onclick="createPrivateRoom()" style="background: transparent; border: 1px solid var(--neon-pink); margin-bottom: 10px;">Create Private</button>
-            <input type="text" id="room-input" placeholder="ENTER ROOM CODE">
-            <button style="background: #3498db;" onclick="joinPrivateRoom()">Join Room</button>
+        <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+            <input type="text" id="room-input" placeholder="ROOM CODE" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--neon-pink); background: rgba(0,0,0,0.3); color: white; text-align: center; margin-bottom: 10px; font-family: 'Orbitron';">
+            <button onclick="createPrivateRoom()" style="background: transparent; border: 1px solid var(--neon-pink); margin-bottom: 10px;">CREATE PRIVATE</button>
+            <button style="background: #3498db;" onclick="joinPrivateRoom()">JOIN ROOM</button>
         </div>
     </div>
 
     <div id="game-ui">
         <div class="score-board">
-            <div><small>PLAYER X</small><div id="score-x" class="score-val">0</div></div>
-            <div style="font-size: 1.5rem; opacity: 0.5;">VS</div>
-            <div><small>PLAYER O</small><div id="score-o" class="score-val">0</div></div>
+            <div><small style="opacity: 0.6;">PLAYER X</small><div id="score-x" class="score-val">0</div></div>
+            <div style="font-size: 1.2rem; opacity: 0.3;">VS</div>
+            <div><small style="opacity: 0.6;">PLAYER O</small><div id="score-o" class="score-val">0</div></div>
         </div>
 
         <div id="zone-o" class="player-zone">
             <div class="timer-display" id="time-o">60s</div>
-            <div id="tray-o" style="display:flex; justify-content:center; gap:10px; margin-top:5px;"></div>
+            <div id="tray-o" style="display:flex; gap:8px;"></div>
         </div>
 
-        <div id="board" class="board"></div>
+        <div id="board" class="board">
+            </div>
 
         <div id="zone-x" class="player-zone">
-            <div id="tray-x" style="display:flex; justify-content:center; gap:10px; margin-bottom:5px;"></div>
+            <div id="tray-x" style="display:flex; gap:8px;"></div>
             <div class="timer-display" id="time-x">60s</div>
         </div>
         
-        <p id="status" style="font-size: 0.8rem; color: var(--neon-cyan); margin-top: 10px;"></p>
+        <p id="status-text" style="font-size: 0.7rem; margin-top: 15px; opacity: 0.5;"></p>
     </div>
 </div>
 
@@ -148,6 +150,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
+    // ใช้ Config จากที่คุณส่งมา
     const firebaseConfig = {
         apiKey: "AIzaSyAvBcOT1ZzasAVzfksDE2ubWf55dd_jV_I",
         authDomain: "my-xo-game-ddf8e.firebaseapp.com",
@@ -216,6 +219,7 @@
             isCountingDown = d.isCountingDown;
             document.getElementById('score-x').textContent = scores.X;
             document.getElementById('score-o').textContent = scores.O;
+            document.getElementById('status-text').textContent = `ROOM: ${roomId} | ROLE: ${myRole}`;
             updateUI();
             if (gameOver) handleRoundEnd();
         });
@@ -232,7 +236,6 @@
         if (isMatchOver) return;
         const win = checkWin();
         let roundWinner = win ? (currentPlayer === 'X' ? 'X' : 'O') : (timeLeft.X <= 0 ? 'O' : 'X');
-
         if (myRole === 'X') {
             const newScores = { ...scores }; newScores[roundWinner]++;
             if (newScores.X >= 2 || newScores.O >= 2) {
@@ -251,33 +254,41 @@
         const winDisp = document.getElementById('winner-display');
         winDisp.textContent = `${winner} WIN!`;
         winDisp.style.color = winner === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)';
-        
         let sec = 7;
-        setInterval(() => {
-            sec--; document.getElementById('back-timer').textContent = sec;
-            if (sec <= 0) location.reload();
-        }, 1000);
+        setInterval(() => { sec--; document.getElementById('back-timer').textContent = sec; if (sec <= 0) location.reload(); }, 1000);
     }
 
     function updateUI() {
         document.getElementById('time-x').textContent = timeLeft.X + 's';
         document.getElementById('time-o').textContent = timeLeft.O + 's';
         const b = document.getElementById('board'); b.innerHTML = '';
+        
+        // สร้างตาราง 9 ช่อง
         cells.forEach((v, i) => {
-            const c = document.createElement('div'); c.className = 'cell'; c.textContent = v;
+            const c = document.createElement('div'); 
+            c.className = 'cell'; 
+            c.textContent = v;
             if (v === 'X') c.style.color = 'var(--neon-pink)';
             if (v === 'O') c.style.color = 'var(--neon-cyan)';
-            if (v === myRole && currentPlayer === myRole && placedCount[myRole] >= 3 && !gameOver && !isCountingDown) c.draggable = true;
+            
+            // ลากหมากในตารางได้เมื่อวางครบ 3 ตัว
+            if (v === myRole && currentPlayer === myRole && placedCount[myRole] >= 3 && !gameOver && !isCountingDown) {
+                c.draggable = true;
+            }
+
             c.ondragstart = (e) => { draggedFromIdx = i; isFromTray = false; e.dataTransfer.setData('text', i); };
             c.ondragover = (e) => { e.preventDefault(); if (!cells[i]) c.classList.add('drag-over'); };
             c.ondragleave = () => c.classList.remove('drag-over');
             c.ondrop = (e) => { e.preventDefault(); handleDrop(i); };
             b.appendChild(c);
         });
+
+        // อัปเดตหมากในถาด
         const tx = document.getElementById('tray-x'), to = document.getElementById('tray-o');
         tx.innerHTML = ''; to.innerHTML = '';
         document.getElementById('zone-x').className = 'player-zone' + (currentPlayer === 'X' ? ' active-zone' : '');
         document.getElementById('zone-o').className = 'player-zone' + (currentPlayer === 'O' ? ' active-zone' : '');
+        
         for (let i = (placedCount.O || 0); i < 3; i++) to.appendChild(createP('O'));
         for (let i = (placedCount.X || 0); i < 3; i++) tx.appendChild(createP('X'));
     }
@@ -285,6 +296,7 @@
     function createP(t) {
         const p = document.createElement('div'); p.className = 'piece'; p.textContent = t;
         p.style.background = t === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)';
+        p.style.boxShadow = `0 0 10px ${t === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)'}`;
         if (currentPlayer === t && myRole === t && !gameOver && !isCountingDown) p.draggable = true;
         p.ondragstart = (e) => { isFromTray = true; e.dataTransfer.setData('text', 'tray'); };
         return p;
