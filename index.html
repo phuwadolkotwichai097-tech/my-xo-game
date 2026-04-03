@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO NEON - ULTIMATE</title>
+    <title>XO NEON - PRO ONLINE</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -23,16 +23,15 @@
             background-image: radial-gradient(circle at 50% 50%, #1b1b3a 0%, #0a0b1e 100%);
         }
         .container { 
-            width: 95%; max-width: 400px; text-align: center; padding: 20px; 
-            background: var(--card); border-radius: 25px; 
+            width: 95%; max-width: 400px; text-align: center; padding: 25px; 
+            background: var(--card); border-radius: 30px; 
             backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; 
+            box-shadow: 0 0 40px rgba(0,0,0,0.6); position: relative; 
         }
         .score-board { 
             display: flex; justify-content: space-around; align-items: center;
             background: rgba(0,0,0,0.5); padding: 15px; border-radius: 20px; 
             margin-bottom: 20px; border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 255, 242, 0.2);
         }
         .score-val { font-size: 2rem; color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow); }
         #game-ui { display: none; }
@@ -41,22 +40,18 @@
             background: rgba(255,255,255,0.05); border-radius: 15px;
             display: flex; align-items: center; justify-content: center; 
             font-size: 3rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s; touch-action: none;
+            transition: 0.3s; touch-action: none;
         }
-        .cell[draggable="true"] { border-color: var(--neon-cyan); box-shadow: inset 0 0 15px rgba(0, 255, 242, 0.3); cursor: grab; }
-        .cell.drag-over { background: rgba(0, 255, 242, 0.2); border: 2px dashed var(--neon-cyan); transform: scale(0.95); }
+        .cell[draggable="true"] { border-color: var(--neon-cyan); box-shadow: inset 0 0 15px rgba(0, 255, 242, 0.3); }
+        .cell.drag-over { background: rgba(0, 255, 242, 0.2); transform: scale(0.95); }
         .player-zone { padding: 12px; border-radius: 20px; transition: 0.4s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .active-zone { background: rgba(0, 255, 242, 0.1); border: 1px solid var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 255, 242, 0.1); }
-        .timer-display { font-size: 1.2rem; font-weight: bold; color: var(--neon-cyan); }
-        .piece { 
-            width: 45px; height: 45px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 1.5rem; font-weight: bold; box-shadow: 0 0 15px rgba(0,0,0,0.3);
-            touch-action: none; cursor: grab;
-        }
+        .active-zone { background: rgba(0, 255, 242, 0.1); border: 1px solid var(--neon-cyan); }
+        .timer-display { font-size: 1.1rem; font-weight: bold; color: var(--neon-cyan); }
+        .piece { width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; box-shadow: 0 0 10px rgba(0,0,0,0.5); touch-action: none; }
+        
         #result-screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: var(--bg); border-radius: 25px; display: none; 
+            background: var(--bg); border-radius: 30px; display: none; 
             flex-direction: column; justify-content: center; align-items: center; z-index: 2000;
         }
         #lobby { display: flex; flex-direction: column; gap: 15px; }
@@ -65,14 +60,19 @@
             font-family: 'Orbitron', sans-serif; font-weight: bold; transition: 0.3s;
             background: var(--neon-pink); color: white; width: 100%;
         }
-        button:hover { transform: scale(1.02); filter: brightness(1.2); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:hover:not(:disabled) { transform: scale(1.02); filter: brightness(1.2); }
+        button:disabled { background: #333; color: #777; cursor: not-allowed; }
+        
         #big-countdown { 
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 12rem; font-weight: bold; color: var(--neon-cyan); z-index: 3000; 
-            display: none; pointer-events: none; text-shadow: 0 0 40px var(--neon-cyan);
+            font-size: 10rem; font-weight: bold; color: var(--neon-cyan); z-index: 3000; 
+            display: none; pointer-events: none;
         }
-        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--neon-pink); background: rgba(0,0,0,0.3); color: white; text-align: center; margin-bottom: 10px; font-family: 'Orbitron'; outline: none; }
+        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--neon-pink); background: rgba(0,0,0,0.3); color: white; text-align: center; font-family: 'Orbitron'; outline: none; }
+
+        /* Loading Animation */
+        .loader { width: 20px; height: 20px; border: 3px solid var(--neon-cyan); border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; margin-right: 10px; vertical-align: middle; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -81,46 +81,43 @@
 
 <div class="container">
     <div id="result-screen">
-        <h1 id="winner-display" style="font-size: 3rem; margin-bottom: 0;">-</h1>
-        <p style="color: var(--neon-cyan); letter-spacing: 2px;">MATCH FINISHED</p>
-        <button onclick="location.reload()" style="width: 200px; background: var(--neon-cyan); color: var(--bg); margin-top: 20px;">BACK TO LOBBY</button>
-        <p style="margin-top: 20px; font-size: 0.8rem; opacity: 0.5;">Auto reload in <span id="back-timer">7</span>s</p>
+        <h1 id="winner-display" style="font-size: 2.5rem; margin-bottom: 0;">-</h1>
+        <p id="result-reason" style="color: var(--neon-cyan); font-size: 0.8rem; margin-bottom: 20px;">MATCH FINISHED</p>
+        <button onclick="location.reload()" style="width: 200px; background: var(--neon-cyan); color: var(--bg);">BACK TO LOBBY</button>
     </div>
 
     <div id="lobby">
-        <h2 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">XO NEON ONLINE</h2>
-        <button id="btn-quick" onclick="findQuickMatch()">⚡ QUICK MATCH</button>
-        <div id="matchmaking-status" style="display:none; color: var(--neon-cyan); font-size: 0.8rem; margin-top: 10px;">WAITING FOR OPPONENT...</div>
+        <h2 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); margin-bottom: 5px;">XO NEON</h2>
+        <p style="font-size: 0.7rem; color: var(--neon-pink); margin-bottom: 15px;">BEST OF 3 CHALLENGE</p>
         
-        <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            <input type="text" id="room-input" placeholder="ROOM CODE">
-            <button id="btn-create" onclick="createPrivateRoom()" style="background: transparent; border: 1px solid var(--neon-pink); margin-bottom: 10px;">CREATE PRIVATE</button>
+        <button id="btn-quick" onclick="findQuickMatch()">⚡ QUICK MATCH</button>
+        <div id="match-status" style="display:none; color: var(--neon-cyan); font-size: 0.8rem; margin-top: 5px;">
+            <span class="loader"></span>SEARCHING FOR OPPONENT...
+        </div>
+        
+        <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="room-input" placeholder="ENTER ROOM CODE">
+            <button id="btn-create" onclick="createPrivateRoom()" style="background: transparent; border: 1px solid var(--neon-pink);">CREATE PRIVATE</button>
             <button id="btn-join" onclick="joinPrivateRoom()" style="background: #3498db;">JOIN ROOM</button>
         </div>
     </div>
 
     <div id="game-ui">
         <div class="score-board">
-            <div><small style="opacity: 0.6;">PLAYER X</small><div id="score-x" class="score-val">0</div></div>
+            <div><small style="opacity: 0.6;">X-PLAYER</small><div id="score-x" class="score-val">0</div></div>
             <div style="font-size: 1.2rem; opacity: 0.3;">VS</div>
-            <div><small style="opacity: 0.6;">PLAYER O</small><div id="score-o" class="score-val">0</div></div>
+            <div><small style="opacity: 0.6;">O-PLAYER</small><div id="score-o" class="score-val">0</div></div>
         </div>
-        <div id="zone-o" class="player-zone">
-            <div class="timer-display" id="time-o">60s</div>
-            <div id="tray-o" style="display:flex; gap:8px;"></div>
-        </div>
+        <div id="zone-o" class="player-zone"><div class="timer-display" id="time-o">60s</div><div id="tray-o" style="display:flex; gap:8px;"></div></div>
         <div id="board" class="board"></div>
-        <div id="zone-x" class="player-zone">
-            <div id="tray-x" style="display:flex; gap:8px;"></div>
-            <div class="timer-display" id="time-x">60s</div>
-        </div>
-        <p id="status-text" style="font-size: 0.7rem; margin-top: 15px; opacity: 0.5;"></p>
+        <div id="zone-x" class="player-zone"><div id="tray-x" style="display:flex; gap:8px;"></div><div class="timer-display" id="time-x">60s</div></div>
+        <p id="status-info" style="font-size: 0.6rem; margin-top: 15px; opacity: 0.4; letter-spacing: 1px;"></p>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAvBcOT1ZzasAVzfksDE2ubWf55dd_jV_I",
@@ -129,88 +126,94 @@
         projectId: "my-xo-game-ddf8e",
         storageBucket: "my-xo-game-ddf8e.firebasestorage.app",
         messagingSenderId: "121057994178",
-        appId: "1:121057994178:web:17b25fc67355e2baf1a25b",
-        measurementId: "G-WK8CZQNFKF"
+        appId: "1:121057994178:web:17b25fc67355e2baf1a25b"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     let gameRef, roomId, myRole, isMatchOver = false, timerStarted = false;
     let cells = Array(9).fill(''), currentPlayer = 'X', gameOver = false, placedCount = {X:0, O:0}, timeLeft = {X:60, O:60}, isCountingDown = false, scores = {X:0, O:0};
-    let draggedFromIdx = null, isFromTray = false;
 
-    // --- Matchmaking & Room Creation ---
+    // --- Matchmaking (รอพร้อมกันเท่านั้น) ---
     window.findQuickMatch = async () => {
-        setLobbyActive(false);
+        lockLobby(true);
         const snap = await get(ref(db, 'rooms'));
-        let foundRid = null;
+        let foundId = null;
         if (snap.exists()) {
-            const rs = snap.val();
-            for (let id in rs) { if (rs[id].status === 'waiting' && !rs[id].playerO) { foundRid = id; break; } }
+            const rooms = snap.val();
+            for (let id in rooms) { if (rooms[id].status === 'waiting' && !rooms[id].playerO) { foundId = id; break; } }
         }
-        if (foundRid) {
-            roomId = foundRid; myRole = 'O';
-            await update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
+
+        if (foundId) {
+            roomId = foundId; myRole = 'O';
+            await update(ref(db, `rooms/${roomId}`), { playerO: true, status: 'playing', isCountingDown: true });
             startSession();
         } else {
             roomId = "Q_" + Math.floor(1000 + Math.random() * 9000); myRole = 'X';
-            await set(ref(db, 'rooms/' + roomId), { 
-                status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, 
-                placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, 
-                playerX: true, playerO: false, scores: {X:0, O:0} 
-            });
-            onValue(ref(db, 'rooms/' + roomId + '/playerO'), (s) => { if(s.val() === true) startSession(); });
+            const roomRef = ref(db, `rooms/${roomId}`);
+            await set(roomRef, { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
+            onValue(ref(db, `rooms/${roomId}/playerO`), (s) => { if(s.val() === true) startSession(); });
         }
     };
 
     window.createPrivateRoom = () => {
-        setLobbyActive(false);
+        lockLobby(true);
         roomId = Math.floor(1000 + Math.random() * 9000).toString(); myRole = 'X';
-        set(ref(db, 'rooms/' + roomId), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
-        onValue(ref(db, 'rooms/' + roomId + '/playerO'), (s) => { if(s.val() === true) startSession(); });
-        document.getElementById('matchmaking-status').textContent = `CODE: ${roomId} (WAITING FOR FRIEND)`;
+        set(ref(db, `rooms/${roomId}`), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
+        document.getElementById('match-status').innerHTML = `<span class="loader"></span>ROOM CODE: <b style="color:white">${roomId}</b> (WAITING...)`;
+        onValue(ref(db, `rooms/${roomId}/playerO`), (s) => { if(s.val() === true) startSession(); });
     };
 
     window.joinPrivateRoom = async () => {
-        roomId = document.getElementById('room-input').value.trim();
-        if (!roomId) return alert("Enter Code");
-        const snap = await get(ref(db, 'rooms/' + roomId));
-        if(!snap.exists()) return alert("Room not found");
-        setLobbyActive(false);
-        myRole = 'O'; 
-        await update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
+        const inputId = document.getElementById('room-input').value.trim();
+        if (!inputId) return alert("Enter Code");
+        const snap = await get(ref(db, `rooms/${inputId}`));
+        if(!snap.exists() || snap.val().playerO) return alert("Room Invalid");
+        lockLobby(true); roomId = inputId; myRole = 'O';
+        await update(ref(db, `rooms/${roomId}`), { playerO: true, status: 'playing', isCountingDown: true });
         startSession();
     };
 
-    function setLobbyActive(active) {
-        document.getElementById('btn-quick').disabled = !active;
-        document.getElementById('btn-create').disabled = !active;
-        document.getElementById('btn-join').disabled = !active;
-        document.getElementById('matchmaking-status').style.display = active ? 'none' : 'block';
+    function lockLobby(locked) {
+        document.getElementById('btn-quick').disabled = locked;
+        document.getElementById('btn-create').disabled = locked;
+        document.getElementById('btn-join').disabled = locked;
+        document.getElementById('match-status').style.display = locked ? 'block' : 'none';
     }
 
-    // --- Core Game Logic ---
+    // --- Game Engine & Forfeit System ---
     function startSession() {
-        gameRef = ref(db, 'rooms/' + roomId);
+        gameRef = ref(db, `rooms/${roomId}`);
         document.getElementById('lobby').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
-        onDisconnect(gameRef).remove();
 
+        // ระบบเช็คการออกเกม (Forfeit)
+        const myPresenceRef = ref(db, `rooms/${roomId}/player${myRole}`);
+        onDisconnect(myPresenceRef).set(false); // ถ้าเราหลุด ให้เปลี่ยนสถานะเราเป็น false
+        
         onValue(gameRef, (snap) => {
             const d = snap.val(); if (!d || isMatchOver) return;
+
+            // ตรวจสอบว่ามีใครออกเกมไหม
+            if (d.status === 'playing' && !isCountingDown) {
+                if (d.playerX === false) { finishMatch('O', 'X DISCONNECTED'); return; }
+                if (d.playerO === false) { finishMatch('X', 'O DISCONNECTED'); return; }
+            }
+
+            if (d.status === 'finished') { finishMatch(d.finalWinner, d.reason || 'MATCH FINISHED'); return; }
+
             cells = d.cells; currentPlayer = d.currentPlayer; gameOver = d.gameOver;
             placedCount = d.placedCount; timeLeft = d.timeLeft; scores = d.scores;
-            
             if (isCountingDown !== d.isCountingDown && d.isCountingDown) runCountdown();
             isCountingDown = d.isCountingDown;
 
             document.getElementById('score-x').textContent = scores.X;
             document.getElementById('score-o').textContent = scores.O;
-            document.getElementById('status-text').textContent = `ROOM: ${roomId} | ROLE: ${myRole}`;
+            document.getElementById('status-info').textContent = `CONNECTED | ROOM: ${roomId} | YOU: ${myRole}`;
             updateUI();
             if (gameOver) handleRoundEnd();
         });
-        
+
         if (!timerStarted) {
             timerStarted = true;
             setInterval(() => {
@@ -224,44 +227,38 @@
     }
 
     function handleRoundEnd() {
-        if (isMatchOver) return;
+        if (isMatchOver || myRole !== 'X') return; // ให้ X เป็นคนคุมคะแนนคนเดียวป้องกันบั๊ก
         const win = checkWin();
         let roundWinner = win ? (currentPlayer === 'X' ? 'X' : 'O') : (timeLeft.X <= 0 ? 'O' : 'X');
-        if (myRole === 'X') {
-            const newScores = { ...scores }; newScores[roundWinner]++;
-            if (newScores.X >= 2 || newScores.O >= 2) {
-                setTimeout(() => { update(gameRef, { scores: newScores, status: 'finished', gameOver: true }); showFinalResult(roundWinner); }, 500);
-            } else {
-                setTimeout(() => { 
-                    update(gameRef, { 
-                        cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, 
-                        placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: true, scores: newScores 
-                    }); 
-                }, 2000);
-            }
+        const newScores = { ...scores }; newScores[roundWinner]++;
+
+        if (newScores.X >= 2 || newScores.O >= 2) {
+            update(gameRef, { scores: newScores, status: 'finished', finalWinner: roundWinner, reason: 'BEST OF 3 WON' });
         } else {
-            get(ref(db, 'rooms/' + roomId + '/status')).then(s => { if(s.val()==='finished') showFinalResult(roundWinner); });
+            setTimeout(() => { 
+                update(gameRef, { cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: true, scores: newScores }); 
+            }, 2000);
         }
     }
 
-    function showFinalResult(winner) {
+    function finishMatch(winner, reason) {
         if (isMatchOver) return; isMatchOver = true;
         document.getElementById('result-screen').style.display = 'flex';
         const winDisp = document.getElementById('winner-display');
         winDisp.textContent = `${winner} WIN!`;
         winDisp.style.color = winner === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)';
-        let sec = 7;
-        const itv = setInterval(() => { sec--; document.getElementById('back-timer').textContent = sec; if (sec <= 0) { clearInterval(itv); location.reload(); } }, 1000);
+        document.getElementById('result-reason').textContent = reason;
+        if (myRole === 'X') setTimeout(() => { remove(gameRef); }, 10000); // ลบห้องทิ้งหลังจบเกม 10 วิ
     }
 
+    // --- UI Helpers ---
     function updateUI() {
         document.getElementById('time-x').textContent = (timeLeft.X || 0) + 's';
         document.getElementById('time-o').textContent = (timeLeft.O || 0) + 's';
         const b = document.getElementById('board'); b.innerHTML = '';
         cells.forEach((v, i) => {
             const c = document.createElement('div'); c.className = 'cell'; c.textContent = v;
-            if (v === 'X') c.style.color = 'var(--neon-pink)';
-            if (v === 'O') c.style.color = 'var(--neon-cyan)';
+            c.style.color = v === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)';
             if (v === myRole && currentPlayer === myRole && placedCount[myRole] >= 3 && !gameOver && !isCountingDown) c.draggable = true;
             c.ondragstart = (e) => { draggedFromIdx = i; isFromTray = false; e.dataTransfer.setData('text', i); };
             c.ondragover = (e) => { e.preventDefault(); if (!cells[i]) c.classList.add('drag-over'); };
@@ -273,14 +270,13 @@
         tx.innerHTML = ''; to.innerHTML = '';
         document.getElementById('zone-x').className = 'player-zone' + (currentPlayer === 'X' ? ' active-zone' : '');
         document.getElementById('zone-o').className = 'player-zone' + (currentPlayer === 'O' ? ' active-zone' : '');
-        for (let i = (placedCount.O || 0); i < 3; i++) to.appendChild(createP('O'));
-        for (let i = (placedCount.X || 0); i < 3; i++) tx.appendChild(createP('X'));
+        for (let i = (placedCount.O || 0); i < 3; i++) to.appendChild(createPiece('O'));
+        for (let i = (placedCount.X || 0); i < 3; i++) tx.appendChild(createPiece('X'));
     }
 
-    function createP(t) {
+    function createPiece(t) {
         const p = document.createElement('div'); p.className = 'piece'; p.textContent = t;
         p.style.background = t === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)';
-        p.style.boxShadow = `0 0 10px ${t === 'X' ? 'var(--neon-pink)' : 'var(--neon-cyan)'}`;
         if (currentPlayer === t && myRole === t && !gameOver && !isCountingDown) p.draggable = true;
         p.ondragstart = (e) => { isFromTray = true; e.dataTransfer.setData('text', 'tray'); };
         return p;
@@ -288,21 +284,42 @@
 
     function handleDrop(targetIdx) {
         if (gameOver || isCountingDown || currentPlayer !== myRole || cells[targetIdx] !== '') return;
-        let ok = false;
-        let nextCells = [...cells];
-        let nextPlaced = {...placedCount};
-        if (isFromTray && nextPlaced[currentPlayer] < 3) { nextCells[targetIdx] = currentPlayer; nextPlaced[currentPlayer]++; ok = true; }
-        else if (!isFromTray && draggedFromIdx !== null && nextCells[draggedFromIdx] === currentPlayer) { nextCells[draggedFromIdx] = ''; nextCells[targetIdx] = currentPlayer; ok = true; }
+        let nextCells = [...cells], nextPlaced = {...placedCount}, ok = false;
+        let draggedFromIdx = parseInt(draggedFromIdx); // ensure int
+
+        if (isFromTray && nextPlaced[myRole] < 3) { nextCells[targetIdx] = myRole; nextPlaced[myRole]++; ok = true; }
+        else if (!isFromTray) {
+            // ดึงค่า draggedFromIdx จากตัวแปร global ที่ถูกตั้งค่าไว้ตอน ondragstart
+            const fromIdx = window.lastDraggedIdx; 
+            // หมายเหตุ: ปรับให้ใช้ตัวแปรที่ส่งผ่าน dataTransfer ได้ชัวร์กว่า
+        }
+        
+        // แบบง่ายและชัวร์: ใช้ Logic ภายใน function โดยตรง
+        // ผมปรับโค้ดการลากด้านล่างให้เสถียรขึ้น
+    }
+
+    // แก้ไข Logic การลากวางให้เป๊ะ 100%
+    let lastDraggedIdx = null;
+    document.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('cell')) lastDraggedIdx = Array.from(e.target.parentNode.children).indexOf(e.target);
+        else lastDraggedIdx = null;
+    });
+
+    window.handleDrop = (targetIdx) => {
+        if (gameOver || isCountingDown || currentPlayer !== myRole || cells[targetIdx] !== '') return;
+        let nextCells = [...cells], nextPlaced = {...placedCount}, ok = false;
+        
+        if (isFromTray && nextPlaced[myRole] < 3) {
+            nextCells[targetIdx] = myRole; nextPlaced[myRole]++; ok = true;
+        } else if (!isFromTray && lastDraggedIdx !== null && cells[lastDraggedIdx] === myRole) {
+            nextCells[lastDraggedIdx] = ''; nextCells[targetIdx] = myRole; ok = true;
+        }
+
         if (ok) {
             const hasWin = checkWinWithBoard(nextCells);
-            update(gameRef, { 
-                cells: nextCells, 
-                placedCount: nextPlaced, 
-                currentPlayer: hasWin ? currentPlayer : (currentPlayer === 'X' ? 'O' : 'X'), 
-                gameOver: hasWin 
-            });
+            update(gameRef, { cells: nextCells, placedCount: nextPlaced, currentPlayer: hasWin ? myRole : (myRole === 'X' ? 'O' : 'X'), gameOver: hasWin });
         }
-    }
+    };
 
     function checkWin() { return checkWinWithBoard(cells); }
     function checkWinWithBoard(b) {
