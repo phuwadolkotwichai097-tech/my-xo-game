@@ -17,6 +17,7 @@ const db = getDatabase(app);
 
 // --- Game State ---
 let gameRef, roomId, myRole, isMatchOver = false;
+let playerType = ''; // 'host' หรือ 'guest'
 let cells = Array(9).fill(''), currentPlayer = 'X', gameOver = false;
 let placedCount = {X:0, O:0}, timeLeft = {X:60, O:60}, isCountingDown = false, scores = {X:0, O:0};
 let dragSourceIdx = null;
@@ -29,28 +30,38 @@ window.findQuickMatch = async () => {
     if (snap.exists()) {
         const rooms = snap.val();
         for (let id in rooms) { 
-            if (rooms[id].status === 'waiting' && !rooms[id].playerO) { 
-                foundId = id; break; 
-            } 
+            if (rooms[id].status === 'waiting' && !rooms[id].playerO) { foundId = id; break; } 
         }
     }
+
     if (foundId) {
-        roomId = foundId; myRole = 'O';
-        await update(ref(db, `rooms/${roomId}`), { playerO: true, status: 'playing', isCountingDown: true });
+        roomId = foundId;
+        playerType = 'guest';
+        // คนเข้าทีหลังเป็นคนสุ่มบทบาทให้ทั้งห้อง
+        const hostIsX = Math.random() > 0.5;
+        await update(ref(db, `rooms/${roomId}`), { 
+            playerO: true, 
+            status: 'playing', 
+            isCountingDown: true,
+            hostRole: hostIsX ? 'X' : 'O',
+            guestRole: hostIsX ? 'O' : 'X'
+        });
         startSession();
     } else {
-        roomId = "Q_" + Math.floor(1000 + Math.random() * 9000); myRole = 'X';
+        roomId = "Q_" + Math.floor(1000 + Math.random() * 9000);
+        playerType = 'host';
         await set(ref(db, `rooms/${roomId}`), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
-        onValue(ref(db, `rooms/${roomId}/playerO`), (s) => { if(s.val() === true) startSession(); });
+        onValue(ref(db, `rooms/${roomId}/status`), (s) => { if(s.val() === 'playing') startSession(); });
     }
 };
 
 window.createPrivateRoom = () => {
     lockLobby(true);
-    roomId = Math.floor(1000 + Math.random() * 9000).toString(); myRole = 'X';
+    roomId = Math.floor(1000 + Math.random() * 9000).toString();
+    playerType = 'host';
     set(ref(db, `rooms/${roomId}`), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
     document.getElementById('match-status').textContent = `WAITING... CODE: ${roomId}`;
-    onValue(ref(db, `rooms/${roomId}/playerO`), (s) => { if(s.val() === true) startSession(); });
+    onValue(ref(db, `rooms/${roomId}/status`), (s) => { if(s.val() === 'playing') startSession(); });
 };
 
 window.joinPrivateRoom = async () => {
@@ -58,8 +69,17 @@ window.joinPrivateRoom = async () => {
     if (!inputId) return;
     const snap = await get(ref(db, `rooms/${inputId}`));
     if(!snap.exists() || snap.val().playerO) return alert("Invalid Room");
-    lockLobby(true); roomId = inputId; myRole = 'O';
-    await update(ref(db, `rooms/${roomId}`), { playerO: true, status: 'playing', isCountingDown: true });
+    
+    lockLobby(true); roomId = inputId;
+    playerType = 'guest';
+    const hostIsX = Math.random() > 0.5;
+    await update(ref(db, `rooms/${roomId}`), { 
+        playerO: true, 
+        status: 'playing', 
+        isCountingDown: true,
+        hostRole: hostIsX ? 'X' : 'O',
+        guestRole: hostIsX ? 'O' : 'X'
+    });
     startSession();
 };
 
@@ -74,31 +94,36 @@ function lockLobby(locked) {
 function startSession() {
     gameRef = ref(db, `rooms/${roomId}`);
     document.getElementById('lobby').style.display = 'none';
-    document.getElementById('game-ui').style.display = 'block';
+    document.getElementById('game-ui').style.display = 'flex'; // เปลี่ยนจาก block เป็น flex
     
     onDisconnect(ref(db, `rooms/${roomId}/player${myRole}`)).set(false);
 
     onValue(gameRef, (snap) => {
         const d = snap.val(); if (!d || isMatchOver) return;
-        
-        if (d.status === 'playing' && !d.isCountingDown) {
-            if (d.playerX === false) return finishMatch('O', 'X DISCONNECTED');
-            if (d.playerO === false) return finishMatch('X', 'O DISCONNECTED');
-        }
-        if (d.status === 'finished') return finishMatch(d.finalWinner, d.reason);
 
+        // กำหนดบทบาทครั้งแรกที่โหลดข้อมูลจากห้อง
+        if (!myRole) {
+            myRole = (playerType === 'host') ? d.hostRole : d.guestRole;
+            // สลับมุมมองตามบทบาท
+            if (myRole === 'O') {
+                document.getElementById('game-ui').classList.add('perspective-o');
+            } else {
+                document.getElementById('game-ui').classList.remove('perspective-o');
+            }
+        }
+        
+        // ... โค้ดที่เหลือ (cells, score, updateUI) เหมือนเดิม ...
         cells = d.cells; currentPlayer = d.currentPlayer; gameOver = d.gameOver;
         placedCount = d.placedCount; timeLeft = d.timeLeft; scores = d.scores;
-        
         if (isCountingDown !== d.isCountingDown && d.isCountingDown) runCountdown();
         isCountingDown = d.isCountingDown;
-
         document.getElementById('score-x').textContent = scores.X;
         document.getElementById('score-o').textContent = scores.O;
         updateUI();
         if (gameOver && myRole === 'X') handleRoundEnd();
     });
 
+    // ตัวนับเวลา (เหมือนเดิม)
     setInterval(() => {
         if (currentPlayer === myRole && !gameOver && !isCountingDown && !isMatchOver) {
             timeLeft[myRole]--;
