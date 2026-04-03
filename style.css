@@ -224,3 +224,20 @@ input {
 }
 
 .neon-text { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+
+#game-ui { 
+    display: none; 
+    flex-direction: column; 
+}
+
+#zone-o { order: 1; margin-bottom: 10px; } /* O อยู่บน */
+#board  { order: 2; }                      /* กระดานอยู่กลาง */
+#zone-x { order: 3; margin-top: 10px; }    /* X อยู่ล่าง */
+
+/* เมื่อผู้เล่นเป็น O ให้สลับ O มาล่าง X ไปบน */
+.perspective-o #zone-o { order: 3; margin-top: 10px; margin-bottom: 0; }
+.perspective-o #zone-x { order: 1; margin-bottom: 10px; margin-top: 0; }
+
+/* ปรับสี Tray ให้ตรงกับหมากที่ถือ */
+#tray-x .piece { background: var(--neon-pink); }
+#tray-o .piece { background: var(--neon-cyan); }
