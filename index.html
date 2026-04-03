@@ -1,123 +1,3 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XO NEON - ULTIMATE</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #0a0b1e;
-            --card: rgba(22, 33, 62, 0.9);
-            --neon-cyan: #00fff2;
-            --neon-pink: #ff007b;
-            --neon-yellow: #f1c40f;
-            --text: #ffffff;
-        }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            font-family: 'Orbitron', sans-serif; 
-            display: flex; justify-content: center; align-items: center; 
-            min-height: 100vh; margin: 0; background: var(--bg); 
-            color: var(--text); overflow: hidden;
-            background-image: radial-gradient(circle at 50% 50%, #1b1b3a 0%, #0a0b1e 100%);
-        }
-        .container { 
-            width: 95%; max-width: 400px; text-align: center; padding: 20px; 
-            background: var(--card); border-radius: 25px; 
-            backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5); position: relative; 
-        }
-        .score-board { 
-            display: flex; justify-content: space-around; align-items: center;
-            background: rgba(0,0,0,0.5); padding: 15px; border-radius: 20px; 
-            margin-bottom: 20px; border: 1px solid var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 255, 242, 0.2);
-        }
-        .score-val { font-size: 2rem; color: var(--neon-yellow); text-shadow: 0 0 10px var(--neon-yellow); }
-        #game-ui { display: none; }
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px auto; width: 100%; aspect-ratio: 1/1; }
-        .cell { 
-            background: rgba(255,255,255,0.05); border-radius: 15px;
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 3rem; font-weight: bold; border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s; touch-action: none;
-        }
-        .cell[draggable="true"] { border-color: var(--neon-cyan); box-shadow: inset 0 0 15px rgba(0, 255, 242, 0.3); cursor: grab; }
-        .cell.drag-over { background: rgba(0, 255, 242, 0.2); border: 2px dashed var(--neon-cyan); transform: scale(0.95); }
-        .player-zone { padding: 12px; border-radius: 20px; transition: 0.4s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .active-zone { background: rgba(0, 255, 242, 0.1); border: 1px solid var(--neon-cyan); box-shadow: 0 0 20px rgba(0, 255, 242, 0.1); }
-        .timer-display { font-size: 1.2rem; font-weight: bold; color: var(--neon-cyan); }
-        .piece { 
-            width: 45px; height: 45px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 1.5rem; font-weight: bold; box-shadow: 0 0 15px rgba(0,0,0,0.3);
-            touch-action: none; cursor: grab;
-        }
-        #result-screen { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: var(--bg); border-radius: 25px; display: none; 
-            flex-direction: column; justify-content: center; align-items: center; z-index: 2000;
-        }
-        #lobby { display: flex; flex-direction: column; gap: 15px; }
-        button { 
-            padding: 16px; cursor: pointer; border: none; border-radius: 15px; 
-            font-family: 'Orbitron', sans-serif; font-weight: bold; transition: 0.3s;
-            background: var(--neon-pink); color: white; width: 100%;
-        }
-        button:hover { transform: scale(1.02); filter: brightness(1.2); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        #big-countdown { 
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 12rem; font-weight: bold; color: var(--neon-cyan); z-index: 3000; 
-            display: none; pointer-events: none; text-shadow: 0 0 40px var(--neon-cyan);
-        }
-        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--neon-pink); background: rgba(0,0,0,0.3); color: white; text-align: center; margin-bottom: 10px; font-family: 'Orbitron'; outline: none; }
-    </style>
-</head>
-<body>
-
-<div id="big-countdown">3</div>
-
-<div class="container">
-    <div id="result-screen">
-        <h1 id="winner-display" style="font-size: 3rem; margin-bottom: 0;">-</h1>
-        <p style="color: var(--neon-cyan); letter-spacing: 2px;">MATCH FINISHED</p>
-        <button onclick="location.reload()" style="width: 200px; background: var(--neon-cyan); color: var(--bg); margin-top: 20px;">BACK TO LOBBY</button>
-        <p style="margin-top: 20px; font-size: 0.8rem; opacity: 0.5;">Auto reload in <span id="back-timer">7</span>s</p>
-    </div>
-
-    <div id="lobby">
-        <h2 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan);">XO NEON ONLINE</h2>
-        <button id="btn-quick" onclick="findQuickMatch()">⚡ QUICK MATCH</button>
-        <div id="matchmaking-status" style="display:none; color: var(--neon-cyan); font-size: 0.8rem; margin-top: 10px;">WAITING FOR OPPONENT...</div>
-        
-        <div style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
-            <input type="text" id="room-input" placeholder="ROOM CODE">
-            <button id="btn-create" onclick="createPrivateRoom()" style="background: transparent; border: 1px solid var(--neon-pink); margin-bottom: 10px;">CREATE PRIVATE</button>
-            <button id="btn-join" onclick="joinPrivateRoom()" style="background: #3498db;">JOIN ROOM</button>
-        </div>
-    </div>
-
-    <div id="game-ui">
-        <div class="score-board">
-            <div><small style="opacity: 0.6;">PLAYER X</small><div id="score-x" class="score-val">0</div></div>
-            <div style="font-size: 1.2rem; opacity: 0.3;">VS</div>
-            <div><small style="opacity: 0.6;">PLAYER O</small><div id="score-o" class="score-val">0</div></div>
-        </div>
-        <div id="zone-o" class="player-zone">
-            <div class="timer-display" id="time-o">60s</div>
-            <div id="tray-o" style="display:flex; gap:8px;"></div>
-        </div>
-        <div id="board" class="board"></div>
-        <div id="zone-x" class="player-zone">
-            <div id="tray-x" style="display:flex; gap:8px;"></div>
-            <div class="timer-display" id="time-x">60s</div>
-        </div>
-        <p id="status-text" style="font-size: 0.7rem; margin-top: 15px; opacity: 0.5;"></p>
-    </div>
-</div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getDatabase, ref, set, onValue, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
@@ -140,35 +20,62 @@
     let draggedFromIdx = null, isFromTray = false;
 
     // --- Matchmaking & Room Creation ---
+    
+    // ฟังก์ชันรอฟังว่าห้องพร้อมหรือยัง (มีคนเข้ามาครบ)
+    function listenForOpponent(rId) {
+        const statusRef = ref(db, 'rooms/' + rId + '/status');
+        const unsubscribe = onValue(statusRef, (snap) => {
+            if (snap.val() === 'playing') {
+                unsubscribe(); // เลิกฟังเมื่อเริ่มเกมแล้ว
+                startSession();
+            }
+        });
+    }
+
     window.findQuickMatch = async () => {
         setLobbyActive(false);
+        document.getElementById('matchmaking-status').textContent = "🔍 SEARCHING FOR OPPONENT...";
+        
         const snap = await get(ref(db, 'rooms'));
         let foundRid = null;
         if (snap.exists()) {
             const rs = snap.val();
-            for (let id in rs) { if (rs[id].status === 'waiting' && !rs[id].playerO) { foundRid = id; break; } }
+            for (let id in rs) { 
+                if (rs[id].status === 'waiting' && !rs[id].playerO) { foundRid = id; break; } 
+            }
         }
+
         if (foundRid) {
+            // เจอห้องว่าง: เข้าเป็น Player O และสั่งเริ่มเกมทันที
             roomId = foundRid; myRole = 'O';
-            await update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
+            await update(ref(db, 'rooms/' + roomId), { 
+                playerO: true, 
+                status: 'playing', 
+                isCountingDown: true 
+            });
             startSession();
         } else {
+            // ไม่เจอห้อง: สร้างห้องใหม่เป็น Player X และรออยู่หน้า Lobby
             roomId = "Q_" + Math.floor(1000 + Math.random() * 9000); myRole = 'X';
             await set(ref(db, 'rooms/' + roomId), { 
                 status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, 
                 placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, 
                 playerX: true, playerO: false, scores: {X:0, O:0} 
             });
-            onValue(ref(db, 'rooms/' + roomId + '/playerO'), (s) => { if(s.val() === true) startSession(); });
+            listenForOpponent(roomId);
         }
     };
 
-    window.createPrivateRoom = () => {
+    window.createPrivateRoom = async () => {
         setLobbyActive(false);
         roomId = Math.floor(1000 + Math.random() * 9000).toString(); myRole = 'X';
-        set(ref(db, 'rooms/' + roomId), { status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, playerX: true, playerO: false, scores: {X:0, O:0} });
-        onValue(ref(db, 'rooms/' + roomId + '/playerO'), (s) => { if(s.val() === true) startSession(); });
-        document.getElementById('matchmaking-status').textContent = `CODE: ${roomId} (WAITING FOR FRIEND)`;
+        await set(ref(db, 'rooms/' + roomId), { 
+            status: 'waiting', cells: Array(9).fill(''), currentPlayer: 'X', gameOver: false, 
+            placedCount: {X:0, O:0}, timeLeft: {X:60, O:60}, isCountingDown: false, 
+            playerX: true, playerO: false, scores: {X:0, O:0} 
+        });
+        document.getElementById('matchmaking-status').textContent = `CODE: ${roomId} (WAITING FOR FRIEND...)`;
+        listenForOpponent(roomId);
     };
 
     window.joinPrivateRoom = async () => {
@@ -176,9 +83,15 @@
         if (!roomId) return alert("Enter Code");
         const snap = await get(ref(db, 'rooms/' + roomId));
         if(!snap.exists()) return alert("Room not found");
+        if(snap.val().status !== 'waiting') return alert("Room is already full or finished");
+
         setLobbyActive(false);
         myRole = 'O'; 
-        await update(ref(db, 'rooms/' + roomId), { playerO: true, status: 'playing', isCountingDown: true });
+        await update(ref(db, 'rooms/' + roomId), { 
+            playerO: true, 
+            status: 'playing', 
+            isCountingDown: true 
+        });
         startSession();
     };
 
@@ -214,6 +127,7 @@
         if (!timerStarted) {
             timerStarted = true;
             setInterval(() => {
+                // ลดเวลาเฉพาะเจ้าของตา และต้องไม่ใช่ช่วงนับถอยหลังเริ่มเกม
                 if (currentPlayer === myRole && !gameOver && !isCountingDown && !isMatchOver) {
                     timeLeft[myRole]--; 
                     update(gameRef, { [`timeLeft/${myRole}`]: timeLeft[myRole] });
@@ -316,5 +230,3 @@
         el.style.display = 'none'; if (myRole === 'X') update(gameRef, { isCountingDown: false });
     }
 </script>
-</body>
-</html>
